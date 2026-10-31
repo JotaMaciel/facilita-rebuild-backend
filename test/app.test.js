@@ -10,6 +10,11 @@ const db = {
     create: async ({ data: d }) => { Object.assign(usuario, { ...d, id: 'u1', papel: 'CLIENTE' }); return usuario; },
     findUnique: async ({ where }) => where.email === usuario.email || where.id === usuario.id ? usuario : null,
   },
+  sessao: {
+    create: async ({ data }) => ({ id: 'session1', ...data, revogada: false }),
+    findUnique: async () => ({ id: 'session1', usuarioId: 'u1', revogada: false, expiraEm: new Date(Date.now()+3600000) }),
+    updateMany: async () => ({ count: 1 }),
+  },
   servico: {
     findMany: async ({ where }) => where.usuarioId ? data.filter(s => s.usuarioId === where.usuarioId) : data.filter(s=>s.status === where.status && s.usuarioId !== where.usuarioId?.not),
     findUnique: async ({ where }) => data.find(s => s.id === where.id) || null,
