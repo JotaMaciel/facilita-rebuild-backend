@@ -81,7 +81,7 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     const available = await fetch(base + '/servicos/disponiveis', { headers: providerHeaders });
     assert.equal(available.status, 200);
     assert.equal((await available.json()).data.some(item=>item.id===secondId),true);
-    for (const [action, expected] of [['aceitar','ACEITO'],['iniciar','EM_ANDAMENTO'],['concluir','CONCLUIDO']]) {
+    for (const [action, expected] of [['aceitar','ACEITO'],['iniciar','EM_ANDAMENTO']]) {
       const response = await fetch(base + `/servicos/${secondId}/${action}`, { method:'PATCH', headers:providerHeaders });
       assert.equal(response.status, 200);
       assert.equal((await response.json()).data.status, expected);
@@ -115,6 +115,9 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     assert.ok(notice);
     const marked = await fetch(base+`/notificacoes/${notice.id}/lida`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});
     assert.equal(marked.status,200);
+    const completion = await fetch(base + `/servicos/${secondId}/concluir`, {method:'PATCH',headers:providerHeaders});
+    assert.equal(completion.status,200);
+    assert.equal((await completion.json()).data.status,'CONCLUIDO');
     const finishedChat = await fetch(base + `/servicos/${secondId}/mensagens`, {method:'POST',headers:{...headers,Authorization:`Bearer ${providerToken}`},body:JSON.stringify({texto:'Mensagem após concluir'})});
     assert.equal(finishedChat.status,403);
     const review = await fetch(base + `/servicos/${secondId}/avaliacao`, { method:'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body:JSON.stringify({ nota:5, comentario:'Atendimento excelente' }) });
