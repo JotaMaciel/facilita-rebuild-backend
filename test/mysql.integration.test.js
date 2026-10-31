@@ -143,8 +143,18 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
   const freshLogin = await fetch(base + '/auth/login', {method:'POST',headers,body:JSON.stringify({email,senha:'SenhaNova456!'})});
   assert.equal(freshLogin.status,200);
   const freshToken = (await freshLogin.json()).token;
+  const activeSessions = await fetch(base + '/auth/sessoes', { headers: { Authorization: `Bearer ${freshToken}` } });
+  assert.equal(activeSessions.status,200);
+  assert.ok((await activeSessions.json()).data.some(s=>s.atual === true));
   const logout = await fetch(base + '/auth/logout', { method:'POST', headers: { Authorization: `Bearer ${freshToken}` } });
   assert.equal(logout.status, 200);
   const revoked = await fetch(base + '/auth/me', { headers: { Authorization: `Bearer ${freshToken}` } });
   assert.equal(revoked.status, 401);
+  const fresh2 = await fetch(base + '/auth/login', {method:'POST',headers,body:JSON.stringify({email,senha:'SenhaNova456!'})});
+  assert.equal(fresh2.status,200);
+  const secondToken = (await fresh2.json()).token;
+  const revokeAll = await fetch(base + '/auth/sair-de-todas',{method:'POST',headers:{Authorization:`Bearer ${secondToken}`}});
+  assert.equal(revokeAll.status,200);
+  const blockedAll = await fetch(base + '/auth/me',{headers:{Authorization:`Bearer ${secondToken}`}});
+  assert.equal(blockedAll.status,401);
 });
