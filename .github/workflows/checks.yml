@@ -35,3 +35,8 @@ jobs:
       - run: npm run db:push
       - run: npm test
       - run: npm run test:integration
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t facilita-rebuild-backend:ci .
