@@ -15,7 +15,7 @@ export async function verifyPassword(password, encoded) {
 }
 export function signToken(user, secret) {
   const header = base64url({ alg: 'HS256', typ: 'JWT' });
-  const payload = base64url({ sub: user.id, role: user.papel, exp: Math.floor(Date.now() / 1000) + 3600 });
+  const payload = base64url({ sub: user.id, role: user.papel, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600, iss: 'facilita-rebuild', aud: 'facilita-web' });
   const message = `${header}.${payload}`;
   const signature = createHmac('sha256', secret).update(message).digest('base64url');
   return `${message}.${signature}`;
@@ -32,6 +32,6 @@ export function verifyToken(token, secret) {
   try {
     const meta = JSON.parse(Buffer.from(header, 'base64url').toString());
     const claims = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    return meta.alg === 'HS256' && claims.exp > Math.floor(Date.now() / 1000) && typeof claims.sub === 'string' ? claims : null;
+    return meta.alg === 'HS256' && meta.typ === 'JWT' && claims.iss === 'facilita-rebuild' && claims.aud === 'facilita-web' && Number.isInteger(claims.iat) && claims.iat <= Math.floor(Date.now() / 1000) && Number.isInteger(claims.exp) && claims.exp > Math.floor(Date.now() / 1000) && typeof claims.sub === 'string' && claims.sub.length > 0 ? claims : null;
   } catch { return null; }
 }
