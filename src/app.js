@@ -90,10 +90,18 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
     try {
       const record = await db.recuperacaoSenha.findUnique({ where: { tokenHash: tokenHash(parsed.data.token) } });
       if (!record || record.usado || record.expiraEm <= new Date()) return res.status(400).json({ error: 'INVALID_RESET_TOKEN' });
-      const updated = await db.recuperacaoSenha.updateMany({ where: { id: record.id, usado: false, expiraEm: { gt: new Date() } }, data: { usado: true } });
-      if (!updated.count) return res.status(400).json({ error: 'INVALID_RESET_TOKEN' });
-      await db.usuario.update({ where: { id: record.usuarioId }, data: { senhaHash: await hashPassword(parsed.data.senha) } });
-      await db.sessao.updateMany({ where: { usuarioId: record.usuarioId, revogada: false }, data: { revogada: true } });
+      const novaSenhaHash = await hashPassword(parsed.data.senha);
+      const applied = await db.$transaction(async tx => {
+        const updated = await tx.recuperacaoSenha.updateMany({
+          where: { id: record.id, usado: false, expiraEm: { gt: new Date() } },
+          data: { usado: true },
+        });
+        if (!updated.count) return false;
+        await tx.usuario.update({ where: { id: record.usuarioId }, data: { senhaHash: novaSenhaHash } });
+        await tx.sessao.updateMany({ where: { usuarioId: record.usuarioId, revogada: false }, data: { revogada: true } });
+        return true;
+      });
+      if (!applied) return res.status(400).json({ error: 'INVALID_RESET_TOKEN' });
       res.json({ success: true });
     } catch (error) { next(error); }
   });
