@@ -59,6 +59,13 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     assert.equal(loginProvider.status, 200);
     const providerToken = (await loginProvider.json()).token;
     const providerHeaders = { Authorization: `Bearer ${providerToken}` };
+    const blockedProviderCreation = await fetch(base + '/servicos', {
+      method:'POST',
+      headers: { ...headers, ...providerHeaders },
+      body:JSON.stringify({ descricao:'Tentativa indevida de serviço', categoria:'Teste' })
+    });
+    assert.equal(blockedProviderCreation.status,403);
+
     const available = await fetch(base + '/servicos/disponiveis', { headers: providerHeaders });
     assert.equal(available.status, 200);
     assert.equal((await available.json()).data.some(item=>item.id===secondId),true);
