@@ -116,7 +116,9 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
         data: { status: 'ACEITO', prestadorId: req.auth.sub },
       });
       if (!result.count) return res.status(409).json({ error: 'CANNOT_ACCEPT' });
-      res.json({ data: await db.servico.findUnique({ where: { id: req.params.id } }) });
+      const service = await db.servico.findUnique({ where: { id: req.params.id } });
+      await db.notificacao.create({ data: { usuarioId: service.usuarioId, titulo: 'Serviço aceito', texto: 'Um prestador aceitou sua solicitação.' } });
+      res.json({ data: service });
     } catch (e) { next(e); }
   });
   // Transições atômicas impedem que dois comandos concorrentes avancem o mesmo estado.
