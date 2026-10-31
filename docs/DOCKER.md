@@ -25,3 +25,6 @@ Em uma base nova e isolada, execute `npm run db:deploy` e `npm run db:status` an
 - O serviço de e-mail permanece opcional e requer domínio verificado e credenciais próprias.
 
 O build Docker e o conjunto de testes são executados no CI, mas **nenhuma implantação de homologação ou produção foi realizada**.
+
+## Teste real no GitHub Actions
+Além de construir a imagem, o CI agora inicia um contêiner com configurações sintéticas de produção e consulta `GET /v1/facilita/live` via HTTP. Este teste não depende do banco: confirma inicialização, validação de ambiente e resposta HTTP dentro do Docker. A conectividade MySQL e as migrações seguem cobertas pelo job de integração independente.
