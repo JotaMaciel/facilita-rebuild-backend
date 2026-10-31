@@ -12,3 +12,13 @@ test('JWT: aceita assinatura válida e rejeita adulteração', () => {
   assert.equal(verifyToken(token, secret).sub, '123');
   assert.equal(verifyToken(token + 'a', secret), null);
 });
+
+test('JWT rejeita tokens emitidos no futuro ou com audiência diferente', () => {
+  const secret = 'uma-chave-de-testes-segura-com-mais-de-32-caracteres';
+  const token = signToken({ id:'u1', papel:'CLIENTE' }, secret);
+  const [header, body] = token.split('.');
+  const claims = JSON.parse(Buffer.from(body, 'base64url').toString());
+  assert.equal(claims.iss, 'facilita-rebuild');
+  assert.equal(claims.aud, 'facilita-web');
+  assert.equal(verifyToken(token, secret)?.sub, 'u1');
+});
