@@ -78,6 +78,13 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       res.status(201).json({ data: service });
     } catch (e) { next(e); }
   });
+  app.get('/v1/facilita/servicos/atribuidos', auth, async (req, res, next) => {
+    try {
+      const user = await db.usuario.findUnique({ where: { id: req.auth.sub } });
+      if (!user || user.papel !== 'PRESTADOR') return res.status(403).json({ error: 'FORBIDDEN' });
+      res.json({ data: await db.servico.findMany({ where: { prestadorId: req.auth.sub }, orderBy: { criadoEm:'desc' }, take:100 }) });
+    } catch (error) { next(error); }
+  });
   app.get('/v1/facilita/servicos/disponiveis', auth, async (req, res, next) => {
     try {
       const user = await db.usuario.findUnique({ where: { id: req.auth.sub } });
