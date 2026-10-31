@@ -34,3 +34,4 @@ jobs:
       - run: npm run db:generate
       - run: npm run db:push
       - run: npm test
+      - run: npm run test:integration
