@@ -43,11 +43,11 @@ jobs:
       - run: docker build -t facilita-rebuild-backend:ci .
       - name: Smoke test do contêiner em execução
         run: |
-          docker run -d --name facilita-smoke -p 127.0.0.1:3000:3000 \\
-            -e NODE_ENV=production \\
-            -e JWT_SECRET=segredo-de-ci-aleatorio-com-comprimento-maior-que-quarenta-e-oito-caracteres \\
-            -e DATABASE_URL=mysql://teste:teste@127.0.0.1:3306/facilita_test \\
-            -e FRONTEND_URL=https://app.example.test \\
+          docker run -d --name facilita-smoke -p 127.0.0.1:3000:3000 \
+            -e NODE_ENV=production \
+            -e JWT_SECRET=segredo-de-ci-aleatorio-com-comprimento-maior-que-quarenta-e-oito-caracteres \
+            -e DATABASE_URL=mysql://teste:teste@127.0.0.1:3306/facilita_test \
+            -e FRONTEND_URL=https://app.example.test \
             facilita-rebuild-backend:ci
           for i in $(seq 1 20); do
             if curl --fail --silent http://127.0.0.1:3000/v1/facilita/live > /tmp/facilita-live.json; then
