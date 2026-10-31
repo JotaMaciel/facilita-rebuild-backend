@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import { createApp } from './app.js';
-
+import { prisma } from './db.js';
 const port = Number(process.env.PORT || 3000);
-const host = process.env.HOST || '127.0.0.1';
-createApp().listen(port, host, () => {
-  console.log(`Facilita Rebuild API: http://${host}:${port}/v1/facilita/health`);
-});
+const server = createApp({ db: prisma }).listen(port, () => console.log(`API em http://localhost:${port}/v1/facilita`));
+async function shutdown() { server.close(); await prisma.$disconnect(); }
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
