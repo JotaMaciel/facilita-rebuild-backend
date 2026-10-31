@@ -117,7 +117,11 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       });
       if (!result.count) return res.status(409).json({ error: 'CANNOT_ACCEPT' });
       const service = await db.servico.findUnique({ where: { id: req.params.id } });
-      await db.notificacao.create({ data: { usuarioId: service.usuarioId, titulo: 'Serviço aceito', texto: 'Um prestador aceitou sua solicitação.' } });
+      try {
+        await db.notificacao.create({ data: { usuarioId: service.usuarioId, titulo: 'Serviço aceito', texto: 'Um prestador aceitou sua solicitação.' } });
+      } catch (notifyError) {
+        console.error('Falha ao gerar notificação de aceite:', notifyError);
+      }
       res.json({ data: service });
     } catch (e) { next(e); }
   });
