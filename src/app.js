@@ -74,6 +74,8 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
     const parsed = serviceSchema.safeParse(req.body);
     if (!parsed.success) return invalid(res, parsed);
     try {
+      const requester = await db.usuario.findUnique({ where: { id: req.auth.sub } });
+      if (!requester || requester.papel !== 'CLIENTE') return res.status(403).json({ error: 'FORBIDDEN' });
       const service = await db.servico.create({ data: { ...parsed.data, usuarioId: req.auth.sub } });
       res.status(201).json({ data: service });
     } catch (e) { next(e); }
