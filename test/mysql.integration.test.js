@@ -22,7 +22,7 @@ before(async () => {
 });
 after(async () => {
   if (serviceId) await prisma.servico.deleteMany({ where: { id: serviceId } });
-  if (userId) { await prisma.notificacao.deleteMany({ where: { usuarioId: userId } }); await prisma.usuario.deleteMany({ where: { id: userId } }); }
+  if (userId) { await prisma.recuperacaoSenha.deleteMany({ where: { usuarioId: userId } }); await prisma.notificacao.deleteMany({ where: { usuarioId: userId } }); await prisma.usuario.deleteMany({ where: { id: userId } }); }
   await new Promise(resolve => server?.close(resolve));
   await prisma.$disconnect();
 });
@@ -35,6 +35,13 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
   const login = await fetch(base + '/auth/login', { method: 'POST', headers, body: JSON.stringify({ email, senha: 'SenhaSegura123!' }) });
   assert.equal(login.status, 200);
   token = (await login.json()).token;
+  const resetRequest = await fetch(base + '/auth/recuperar-senha', { method:'POST', headers, body:JSON.stringify({email}) });
+  assert.equal(resetRequest.status,200);
+  const resetRow = await prisma.recuperacaoSenha.findFirst({ where:{ usuarioId:userId } });
+  assert.ok(resetRow?.tokenHash);
+  const unknownRequest = await fetch(base + '/auth/recuperar-senha', { method:'POST', headers, body:JSON.stringify({email:'nao-existe@example.test'}) });
+  assert.equal(unknownRequest.status,200);
+
   const unauthorized = await fetch(base + '/servicos');
   assert.equal(unauthorized.status, 401);
   const created = await fetch(base + '/servicos', { method: 'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body: JSON.stringify({ descricao: 'Comprar remédios na farmácia', categoria: 'Compras' }) });
