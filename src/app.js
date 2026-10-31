@@ -28,6 +28,7 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
   app.use(helmet());
   app.use(cors({ origin: (process.env.FRONTEND_URL || 'http://localhost:5173').split(',').map(x=>x.trim()) }));
   app.use(express.json({ limit: '100kb' }));
+  app.get('/v1/facilita/live', (_req, res) => res.json({ status: 'alive' }));
   app.get('/v1/facilita/health', async (_req, res, next) => {
     try { await db.$queryRaw`SELECT 1`; res.json({ status: 'ok', database: 'connected' }); }
     catch (e) { next(e); }
