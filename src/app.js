@@ -32,12 +32,17 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
     catch (e) { next(e); }
   });
   const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false });
-  const auth = (req, res, next) => {
+  const auth = async (req, res, next) => {
     const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
     const claims = verifyToken(token, jwtSecret);
     if (!claims) return res.status(401).json({ error: 'UNAUTHORIZED' });
-    req.auth = claims;
-    next();
+    try {
+      const session = await db.sessao.findUnique({ where: { tokenHash: tokenHash(token) } });
+      if (!session || session.revogada || session.usuarioId !== claims.sub || session.expiraEm <= new Date()) return res.status(401).json({ error: 'SESSION_EXPIRED' });
+      req.auth = claims;
+      req.sessionId = session.id;
+      next();
+    } catch (error) { next(error); }
   };
   app.post('/v1/facilita/auth/registro', authLimiter, async (req, res, next) => {
     const parsed = registerSchema.safeParse(req.body);
@@ -57,7 +62,9 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
     try {
       const user = await db.usuario.findUnique({ where: { email: parsed.data.email } });
       if (!user || !(await verifyPassword(parsed.data.senha, user.senhaHash))) return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
-      res.json({ token: signToken(user, jwtSecret), usuario: publicUser(user) });
+      const token = signToken(user, jwtSecret);
+      await db.sessao.create({ data: { usuarioId: user.id, tokenHash: tokenHash(token), expiraEm: new Date(Date.now() + 3600_000) } });
+      res.json({ token, usuario: publicUser(user) });
     } catch (e) { next(e); }
   });
   app.post('/v1/facilita/auth/recuperar-senha', authLimiter, async (req, res, next) => {
@@ -86,6 +93,13 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       const updated = await db.recuperacaoSenha.updateMany({ where: { id: record.id, usado: false, expiraEm: { gt: new Date() } }, data: { usado: true } });
       if (!updated.count) return res.status(400).json({ error: 'INVALID_RESET_TOKEN' });
       await db.usuario.update({ where: { id: record.usuarioId }, data: { senhaHash: await hashPassword(parsed.data.senha) } });
+      await db.sessao.updateMany({ where: { usuarioId: record.usuarioId, revogada: false }, data: { revogada: true } });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
+  app.post('/v1/facilita/auth/logout', auth, async (req, res, next) => {
+    try {
+      await db.sessao.updateMany({ where: { id: req.sessionId, usuarioId: req.auth.sub }, data: { revogada: true } });
       res.json({ success: true });
     } catch (error) { next(error); }
   });
