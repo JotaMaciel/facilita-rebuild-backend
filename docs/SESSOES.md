@@ -16,3 +16,5 @@
 ## Novas operações
 - `GET /v1/facilita/auth/sessoes`: lista até 50 sessões válidas do usuário, sem retornar tokens ou hashes.
 - `POST /v1/facilita/auth/sair-de-todas`: revoga todas as sessões do usuário, inclusive a atual; exige novo login.
+
+- `DELETE /v1/facilita/auth/sessoes/:id`: revoga uma sessão pertencente à conta. Se for a sessão atual, é necessário fazer login novamente.
