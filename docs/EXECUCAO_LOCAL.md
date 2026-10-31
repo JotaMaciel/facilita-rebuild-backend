@@ -8,7 +8,7 @@ npm install
 cp .env.example .env
 docker compose up -d
 npm run db:generate
-npm run db:push
+npm run db:deploy
 npm test
 npm run dev
 ```
@@ -46,3 +46,5 @@ O FrontEnd espera `http://localhost:3000/v1/facilita` por padrão.
 - Não há contratação, pagamento real, chat, geolocalização ou integração com o projeto original.
 - A listagem retorna até 100 serviços; é necessário implementar paginação e checagem de acesso antes do uso real.
 - API é uma reimplementação inicial e ainda não tem paridade com o Facilita original.
+
+**Observação:** `db:deploy` é indicado para uma base de testes **vazia**. Em banco existente já sincronizado via `db:push`, leia `docs/MIGRACOES.md` antes de executar.
