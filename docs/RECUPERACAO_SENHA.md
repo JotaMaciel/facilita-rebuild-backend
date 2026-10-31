@@ -14,3 +14,6 @@ Também faltam limpeza de tokens expirados, controle de repetição por conta, r
 
 ## Segurança
 Não devolver o token de recuperação em respostas da API. Não usar links de produção com URLs previsíveis. Usar HTTPS e restringir as operações ao ambiente controlado até completar o fluxo.
+
+## Interface web
+A interface permite solicitar redefinição e informar token no ambiente de desenvolvimento. **Ainda não existe entrega por e-mail**: o usuário não receberá instruções sem uma integração de e-mail configurada. Não divulgar esta funcionalidade como operacional em produção.
