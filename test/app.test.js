@@ -11,7 +11,9 @@ const db = {
     findUnique: async ({ where }) => where.email === usuario.email || where.id === usuario.id ? usuario : null,
   },
   servico: {
-    findMany: async () => data,
+    findMany: async ({ where }) => data.filter(s => s.usuarioId === where.usuarioId),
+    findFirst: async ({ where }) => data.find(s => s.id === where.id && s.usuarioId === where.usuarioId) || null,
+    updateMany: async ({ where, data: change }) => { const s = data.find(s => s.id === where.id && s.usuarioId === where.usuarioId && s.status === where.status); if (!s) return { count: 0 }; Object.assign(s, change); return { count: 1 }; },
     create: async ({ data: item }) => { const out = { ...item, id: 's1', status: 'PENDENTE' }; data.push(out); return out; },
   },
 };
@@ -35,4 +37,9 @@ test('registro, login, criação de serviço', async () => {
   assert.equal(r.status, 201);
   r = await fetch(url + '/servicos', { headers: { Authorization: 'Bearer ' + token } });
   assert.equal((await r.json()).data.length, 1);
+  const cancel = await fetch(url + '/servicos/s1/cancelar', { method: 'PATCH', headers: { Authorization: 'Bearer ' + token } });
+  assert.equal(cancel.status, 200);
+  assert.equal((await cancel.json()).data.status, 'CANCELADO');
+  const repeat = await fetch(url + '/servicos/s1/cancelar', { method: 'PATCH', headers: { Authorization: 'Bearer ' + token } });
+  assert.equal(repeat.status, 409);
 });
