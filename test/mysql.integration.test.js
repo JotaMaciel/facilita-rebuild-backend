@@ -42,6 +42,8 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
   const unknownRequest = await fetch(base + '/auth/recuperar-senha', { method:'POST', headers, body:JSON.stringify({email:'nao-existe@example.test'}) });
   assert.equal(unknownRequest.status,200);
 
+  const meBeforeLogout = await fetch(base + '/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+  assert.equal(meBeforeLogout.status, 200);
   const unauthorized = await fetch(base + '/servicos');
   assert.equal(unauthorized.status, 401);
   const created = await fetch(base + '/servicos', { method: 'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body: JSON.stringify({ descricao: 'Comprar remédios na farmácia', categoria: 'Compras' }) });
@@ -103,6 +105,7 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
       const blocked = await fetch(base + `/servicos/${secondId}/mensagens`, { headers:{Authorization:`Bearer ${outsiderToken}`} });
       assert.equal(blocked.status,404);
     } finally {
+      await prisma.sessao.deleteMany({ where:{ usuarioId: outsiderId } });
       await prisma.usuario.deleteMany({ where:{ id: outsiderId } });
     }
     const note = await fetch(base+'/notificacoes',{headers:{Authorization:`Bearer ${token}`}});
@@ -119,6 +122,7 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     await prisma.mensagem.deleteMany({ where: { servicoId: secondId } });
     await prisma.avaliacao.deleteMany({ where: { servicoId: secondId } });
     await prisma.servico.deleteMany({ where: { id: secondId } });
+    await prisma.sessao.deleteMany({ where: { usuarioId: providerId } });
     await prisma.usuario.deleteMany({ where: { id: providerId } });
   }
 
