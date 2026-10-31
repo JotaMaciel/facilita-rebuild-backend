@@ -115,6 +115,8 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     assert.ok(notice);
     const marked = await fetch(base+`/notificacoes/${notice.id}/lida`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});
     assert.equal(marked.status,200);
+    const finishedChat = await fetch(base + `/servicos/${secondId}/mensagens`, {method:'POST',headers:{...headers,Authorization:`Bearer ${providerToken}`},body:JSON.stringify({texto:'Mensagem após concluir'})});
+    assert.equal(finishedChat.status,403);
     const review = await fetch(base + `/servicos/${secondId}/avaliacao`, { method:'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body:JSON.stringify({ nota:5, comentario:'Atendimento excelente' }) });
     assert.equal(review.status,201);
     const duplicate = await fetch(base + `/servicos/${secondId}/avaliacao`, { method:'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body:JSON.stringify({ nota:4 }) });
