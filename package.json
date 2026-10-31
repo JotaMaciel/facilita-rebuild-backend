@@ -9,10 +9,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test",
+    "test": "node --test test/app.test.js test/security.test.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "test:integration": "node --test test/mysql.integration.test.js"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
