@@ -9,7 +9,7 @@ const credentialsSchema = z.object({
   email: z.email().max(191).transform(v => v.toLowerCase()),
   senha: z.string().min(8).max(128),
 });
-const registerSchema = credentialsSchema.extend({ nome: z.string().trim().min(2).max(120) });
+const registerSchema = credentialsSchema.extend({ nome: z.string().trim().min(2).max(120), papel: z.enum(['CLIENTE', 'PRESTADOR']).default('CLIENTE') });
 const serviceSchema = z.object({
   descricao: z.string().trim().min(5).max(500),
   categoria: z.string().trim().min(2).max(80),
@@ -42,8 +42,8 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) return invalid(res, parsed);
     try {
-      const { nome, email, senha } = parsed.data;
-      const user = await db.usuario.create({ data: { nome, email, senhaHash: await hashPassword(senha) } });
+      const { nome, email, senha, papel } = parsed.data;
+      const user = await db.usuario.create({ data: { nome, email, papel, senhaHash: await hashPassword(senha) } });
       res.status(201).json({ data: publicUser(user) });
     } catch (e) {
       if (e.code === 'P2002') return res.status(409).json({ error: 'EMAIL_IN_USE' });
