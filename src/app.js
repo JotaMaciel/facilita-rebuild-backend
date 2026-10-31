@@ -112,6 +112,45 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       res.json({ data: await db.servico.findUnique({ where: { id: req.params.id } }) });
     } catch (e) { next(e); }
   });
+  // Transições atômicas impedem que dois comandos concorrentes avancem o mesmo estado.
+  async function transition(req, res, next, { from, to, ownerField }) {
+    try {
+      const user = await db.usuario.findUnique({ where: { id: req.auth.sub } });
+      if (!user || (ownerField === 'prestadorId' && user.papel !== 'PRESTADOR')) {
+        return res.status(403).json({ error: 'FORBIDDEN' });
+      }
+      const updated = await db.servico.updateMany({
+        where: { id: req.params.id, [ownerField]: req.auth.sub, status: from },
+        data: { status: to },
+      });
+      if (!updated.count) return res.status(409).json({ error: 'INVALID_TRANSITION' });
+      res.json({ data: await db.servico.findUnique({ where: { id: req.params.id } }) });
+    } catch (error) { next(error); }
+  }
+  app.patch('/v1/facilita/servicos/:id/iniciar', auth, (req, res, next) =>
+    transition(req, res, next, { from: 'ACEITO', to: 'EM_ANDAMENTO', ownerField: 'prestadorId' }));
+  app.patch('/v1/facilita/servicos/:id/concluir', auth, (req, res, next) =>
+    transition(req, res, next, { from: 'EM_ANDAMENTO', to: 'CONCLUIDO', ownerField: 'prestadorId' }));
+
+  const avaliacaoSchema = z.object({
+    nota: z.number().int().min(1).max(5),
+    comentario: z.string().trim().max(500).optional(),
+  });
+  app.post('/v1/facilita/servicos/:id/avaliacao', auth, async (req, res, next) => {
+    const parsed = avaliacaoSchema.safeParse(req.body);
+    if (!parsed.success) return invalid(res, parsed);
+    try {
+      const service = await db.servico.findFirst({
+        where: { id: req.params.id, usuarioId: req.auth.sub, status: 'CONCLUIDO', prestadorId: { not: null } },
+      });
+      if (!service) return res.status(409).json({ error: 'SERVICE_NOT_ELIGIBLE' });
+      const review = await db.avaliacao.create({ data: { servicoId: service.id, ...parsed.data } });
+      res.status(201).json({ data: review });
+    } catch (error) {
+      if (error.code === 'P2002') return res.status(409).json({ error: 'ALREADY_REVIEWED' });
+      next(error);
+    }
+  });
   app.use((_req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
   app.use((err, _req, res, _next) => {
     console.error('API error', err);
