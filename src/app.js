@@ -158,6 +158,42 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       next(error);
     }
   });
+  // Mensagens: somente o contratante e o prestador atribuído participam.
+  const messageSchema = z.object({ texto: z.string().trim().min(1).max(2000) });
+  async function participant(db, id, userId) {
+    return db.servico.findFirst({ where: { id, OR: [{ usuarioId: userId }, { prestadorId: userId }] } });
+  }
+  app.get('/v1/facilita/servicos/:id/mensagens', auth, async (req, res, next) => {
+    try {
+      const service = await participant(db, req.params.id, req.auth.sub);
+      if (!service || !service.prestadorId) return res.status(404).json({ error: 'NOT_FOUND' });
+      const data = await db.mensagem.findMany({ where: { servicoId: service.id }, orderBy: { criadoEm: 'asc' }, take: 100 });
+      res.json({ data });
+    } catch (error) { next(error); }
+  });
+  app.post('/v1/facilita/servicos/:id/mensagens', auth, async (req, res, next) => {
+    const parsed = messageSchema.safeParse(req.body);
+    if (!parsed.success) return invalid(res, parsed);
+    try {
+      const service = await participant(db, req.params.id, req.auth.sub);
+      if (!service || !service.prestadorId || ['PENDENTE','CANCELADO'].includes(service.status)) return res.status(403).json({ error: 'FORBIDDEN' });
+      const data = await db.mensagem.create({ data: { servicoId: service.id, autorId: req.auth.sub, texto: parsed.data.texto } });
+      res.status(201).json({ data });
+    } catch (error) { next(error); }
+  });
+  app.get('/v1/facilita/notificacoes', auth, async (req, res, next) => {
+    try {
+      const data = await db.notificacao.findMany({ where: { usuarioId: req.auth.sub }, orderBy: { criadoEm: 'desc' }, take: 50 });
+      res.json({ data });
+    } catch (error) { next(error); }
+  });
+  app.patch('/v1/facilita/notificacoes/:id/lida', auth, async (req, res, next) => {
+    try {
+      const result = await db.notificacao.updateMany({ where: { id: req.params.id, usuarioId: req.auth.sub }, data: { lida: true } });
+      if (!result.count) return res.status(404).json({ error: 'NOT_FOUND' });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
   app.use((_req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
   app.use((err, _req, res, _next) => {
     console.error('API error', err);
