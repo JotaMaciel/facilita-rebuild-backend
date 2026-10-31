@@ -5,6 +5,7 @@ import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { hashPassword, verifyPassword, signToken, verifyToken } from './security.js';
 import { randomToken, tokenHash, expiresAt } from './tokens.js';
+import { sendRecoveryEmail } from './email.js';
 
 const credentialsSchema = z.object({
   email: z.email().max(191).transform(v => v.toLowerCase()),
@@ -75,10 +76,13 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       if (user) {
         const token = randomToken();
         await db.recuperacaoSenha.create({ data: { usuarioId: user.id, tokenHash: tokenHash(token), expiraEm: expiresAt(15) } });
-        // Apenas desenvolvimento controlado: não envia o token na resposta.
-        // Conectar um provedor de e-mail antes de liberar recuperação em produção.
-        if (process.env.NODE_ENV !== 'production' && process.env.DEV_PASSWORD_RESET_LOG === 'true') {
-          console.warn('Token de recuperação local (não usar em produção):', token);
+        try {
+          const sent = await sendRecoveryEmail({ to: user.email, token });
+          if (!sent && process.env.NODE_ENV !== 'production' && process.env.DEV_PASSWORD_RESET_LOG === 'true') {
+            console.warn('Token de recuperação local (não usar em produção):', token);
+          }
+        } catch (mailError) {
+          console.error('Falha no envio de recuperação:', mailError.message);
         }
       }
       res.json({ message: 'Se o e-mail existir, as instruções de recuperação serão enviadas.' });
