@@ -261,17 +261,18 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
   app.get('/v1/facilita/servicos/:id/mensagens', auth, async (req, res, next) => {
     try {
       const service = await participant(db, req.params.id, req.auth.sub);
-      if (!service || !service.prestadorId) return res.status(404).json({ error: 'NOT_FOUND' });
+      if (!service || !service.prestadorId || ['PENDENTE', 'CANCELADO'].includes(service.status)) return res.status(404).json({ error: 'NOT_FOUND' });
       const data = await db.mensagem.findMany({ where: { servicoId: service.id }, orderBy: { criadoEm: 'asc' }, take: 100 });
       res.json({ data });
     } catch (error) { next(error); }
   });
-  app.post('/v1/facilita/servicos/:id/mensagens', auth, async (req, res, next) => {
+  const messageLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false });
+  app.post('/v1/facilita/servicos/:id/mensagens', auth, messageLimiter, async (req, res, next) => {
     const parsed = messageSchema.safeParse(req.body);
     if (!parsed.success) return invalid(res, parsed);
     try {
       const service = await participant(db, req.params.id, req.auth.sub);
-      if (!service || !service.prestadorId || ['PENDENTE','CANCELADO'].includes(service.status)) return res.status(403).json({ error: 'FORBIDDEN' });
+      if (!service || !service.prestadorId || ['PENDENTE','CANCELADO','CONCLUIDO'].includes(service.status)) return res.status(403).json({ error: 'FORBIDDEN' });
       const data = await db.mensagem.create({ data: { servicoId: service.id, autorId: req.auth.sub, texto: parsed.data.texto } });
       res.status(201).json({ data });
     } catch (error) { next(error); }
