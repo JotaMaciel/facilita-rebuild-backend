@@ -22,7 +22,7 @@ before(async () => {
 });
 after(async () => {
   if (serviceId) await prisma.servico.deleteMany({ where: { id: serviceId } });
-  if (userId) await prisma.usuario.deleteMany({ where: { id: userId } });
+  if (userId) { await prisma.notificacao.deleteMany({ where: { usuarioId: userId } }); await prisma.usuario.deleteMany({ where: { id: userId } }); }
   await new Promise(resolve => server?.close(resolve));
   await prisma.$disconnect();
 });
@@ -67,11 +67,40 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
       assert.equal(response.status, 200);
       assert.equal((await response.json()).data.status, expected);
     }
+    // Autorização: desconhecidos não podem acessar a conversa nem notificações de terceiros.
+    const message = await fetch(base + `/servicos/${secondId}/mensagens`, {
+      method:'POST', headers:{ ...headers, Authorization:`Bearer ${providerToken}` },
+      body:JSON.stringify({ texto:'Estou a caminho!' })
+    });
+    assert.equal(message.status,201);
+    const messageId = (await message.json()).data.id;
+    const messagesForCustomer = await fetch(base + `/servicos/${secondId}/mensagens`, { headers:{ Authorization:`Bearer ${token}` } });
+    assert.equal(messagesForCustomer.status,200);
+    assert.equal((await messagesForCustomer.json()).data.some(m=>m.id===messageId),true);
+    const unknownMail = `outsider-${crypto.randomUUID()}@example.test`;
+    const outsider = await fetch(base + '/auth/registro', { method:'POST', headers, body:JSON.stringify({ nome:'Usuário Externo', email:unknownMail, senha:'SenhaSegura123!' }) });
+    assert.equal(outsider.status,201);
+    const outsiderId = (await outsider.json()).data.id;
+    try {
+      const outsiderLogin = await fetch(base + '/auth/login', { method:'POST', headers, body:JSON.stringify({email:unknownMail,senha:'SenhaSegura123!'})});
+      const outsiderToken = (await outsiderLogin.json()).token;
+      const blocked = await fetch(base + `/servicos/${secondId}/mensagens`, { headers:{Authorization:`Bearer ${outsiderToken}`} });
+      assert.equal(blocked.status,404);
+    } finally {
+      await prisma.usuario.deleteMany({ where:{ id: outsiderId } });
+    }
+    const note = await fetch(base+'/notificacoes',{headers:{Authorization:`Bearer ${token}`}});
+    assert.equal(note.status,200);
+    const notice = (await note.json()).data.find(n=>n.titulo==='Serviço aceito');
+    assert.ok(notice);
+    const marked = await fetch(base+`/notificacoes/${notice.id}/lida`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});
+    assert.equal(marked.status,200);
     const review = await fetch(base + `/servicos/${secondId}/avaliacao`, { method:'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body:JSON.stringify({ nota:5, comentario:'Atendimento excelente' }) });
     assert.equal(review.status,201);
     const duplicate = await fetch(base + `/servicos/${secondId}/avaliacao`, { method:'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body:JSON.stringify({ nota:4 }) });
     assert.equal(duplicate.status,409);
   } finally {
+    await prisma.mensagem.deleteMany({ where: { servicoId: secondId } });
     await prisma.avaliacao.deleteMany({ where: { servicoId: secondId } });
     await prisma.servico.deleteMany({ where: { id: secondId } });
     await prisma.usuario.deleteMany({ where: { id: providerId } });
