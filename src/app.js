@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { hashPassword, verifyPassword, signToken, verifyToken } from './security.js';
 
@@ -29,6 +30,7 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
     try { await db.$queryRaw`SELECT 1`; res.json({ status: 'ok', database: 'connected' }); }
     catch (e) { next(e); }
   });
+  const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false });
   const auth = (req, res, next) => {
     const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
     const claims = verifyToken(token, jwtSecret);
@@ -36,7 +38,7 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
     req.auth = claims;
     next();
   };
-  app.post('/v1/facilita/auth/registro', async (req, res, next) => {
+  app.post('/v1/facilita/auth/registro', authLimiter, async (req, res, next) => {
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) return invalid(res, parsed);
     try {
@@ -48,7 +50,7 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       next(e);
     }
   });
-  app.post('/v1/facilita/auth/login', async (req, res, next) => {
+  app.post('/v1/facilita/auth/login', authLimiter, async (req, res, next) => {
     const parsed = credentialsSchema.safeParse(req.body);
     if (!parsed.success) return invalid(res, parsed);
     try {
