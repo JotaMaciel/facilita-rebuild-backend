@@ -125,5 +125,8 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     await prisma.sessao.deleteMany({ where: { usuarioId: providerId } });
     await prisma.usuario.deleteMany({ where: { id: providerId } });
   }
-
+  const logout = await fetch(base + '/auth/logout', { method:'POST', headers: { Authorization: `Bearer ${token}` } });
+  assert.equal(logout.status, 200);
+  const revoked = await fetch(base + '/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+  assert.equal(revoked.status, 401);
 });
