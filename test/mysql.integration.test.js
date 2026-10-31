@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { PrismaClient } from '@prisma/client';
@@ -125,8 +126,25 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     await prisma.sessao.deleteMany({ where: { usuarioId: providerId } });
     await prisma.usuario.deleteMany({ where: { id: providerId } });
   }
-  const logout = await fetch(base + '/auth/logout', { method:'POST', headers: { Authorization: `Bearer ${token}` } });
+  // Recuperação real no MySQL: token válido apenas uma vez e revogação das sessões.
+  const resetToken = crypto.randomBytes(32).toString('base64url');
+  const resetHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+  await prisma.recuperacaoSenha.create({ data: { usuarioId: userId, tokenHash: resetHash, expiraEm: new Date(Date.now() + 15*60000) } });
+  const invalidReset = await fetch(base + '/auth/redefinir-senha', { method:'POST', headers, body:JSON.stringify({token:'token-que-nao-existe-mesmo-com-comprimento-valido-123',senha:'SenhaNova456!'})});
+  assert.equal(invalidReset.status,400);
+  const resetDone = await fetch(base + '/auth/redefinir-senha', { method:'POST', headers, body:JSON.stringify({token:resetToken,senha:'SenhaNova456!'}) });
+  assert.equal(resetDone.status,200);
+  const reuse = await fetch(base + '/auth/redefinir-senha', { method:'POST', headers, body:JSON.stringify({token:resetToken,senha:'SenhaOutra789!'}) });
+  assert.equal(reuse.status,400);
+  const revokedAfterReset = await fetch(base + '/auth/me', {headers:{Authorization:`Bearer ${token}`}});
+  assert.equal(revokedAfterReset.status,401);
+  const oldLogin = await fetch(base + '/auth/login', {method:'POST',headers,body:JSON.stringify({email,senha:'SenhaSegura123!'})});
+  assert.equal(oldLogin.status,401);
+  const freshLogin = await fetch(base + '/auth/login', {method:'POST',headers,body:JSON.stringify({email,senha:'SenhaNova456!'})});
+  assert.equal(freshLogin.status,200);
+  const freshToken = (await freshLogin.json()).token;
+  const logout = await fetch(base + '/auth/logout', { method:'POST', headers: { Authorization: `Bearer ${freshToken}` } });
   assert.equal(logout.status, 200);
-  const revoked = await fetch(base + '/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+  const revoked = await fetch(base + '/auth/me', { headers: { Authorization: `Bearer ${freshToken}` } });
   assert.equal(revoked.status, 401);
 });
