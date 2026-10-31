@@ -22,7 +22,7 @@ before(async () => {
 });
 after(async () => {
   if (serviceId) await prisma.servico.deleteMany({ where: { id: serviceId } });
-  if (userId) { await prisma.recuperacaoSenha.deleteMany({ where: { usuarioId: userId } }); await prisma.notificacao.deleteMany({ where: { usuarioId: userId } }); await prisma.usuario.deleteMany({ where: { id: userId } }); }
+  if (userId) { await prisma.sessao.deleteMany({ where: { usuarioId: userId } }); await prisma.recuperacaoSenha.deleteMany({ where: { usuarioId: userId } }); await prisma.notificacao.deleteMany({ where: { usuarioId: userId } }); await prisma.usuario.deleteMany({ where: { id: userId } }); }
   await new Promise(resolve => server?.close(resolve));
   await prisma.$disconnect();
 });
