@@ -15,7 +15,7 @@ export async function verifyPassword(password, encoded) {
 }
 export function signToken(user, secret) {
   const header = base64url({ alg: 'HS256', typ: 'JWT' });
-  const payload = base64url({ sub: user.id, role: user.papel, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600, iss: 'facilita-rebuild', aud: 'facilita-web' });
+  const payload = base64url({ sub: user.id, role: user.papel, jti: randomBytes(16).toString('hex'), iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 3600, iss: 'facilita-rebuild', aud: 'facilita-web' });
   const message = `${header}.${payload}`;
   const signature = createHmac('sha256', secret).update(message).digest('base64url');
   return `${message}.${signature}`;
