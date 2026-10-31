@@ -39,3 +39,11 @@ Não registre chaves PagBank, tokens JWT, senhas, URLs com credenciais ou dados 
 
 ## Estado de validação
 Ainda não foram executados build, migrações de banco, testes ou chamadas de API nesta nova versão.
+
+## Implementação desta branch
+
+Esta branch inclui API Express 5, modelos Prisma/MySQL, registro e login JWT, serviços com escopo por usuário, criação, consulta e cancelamento de solicitações pendentes e testes automatizados com mocks. **Ainda não é paridade com o sistema original**.
+
+Instruções de instalação e limitações: [Execução local](docs/EXECUCAO_LOCAL.md).
+
+Requisitos para validar: Node.js >=22, npm e Docker Compose. Os testes e a integração com MySQL ainda não foram executados nesta entrega.
