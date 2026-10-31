@@ -11,7 +11,8 @@ const db = {
     findUnique: async ({ where }) => where.email === usuario.email || where.id === usuario.id ? usuario : null,
   },
   servico: {
-    findMany: async ({ where }) => data.filter(s => s.usuarioId === where.usuarioId),
+    findMany: async ({ where }) => where.usuarioId ? data.filter(s => s.usuarioId === where.usuarioId) : data.filter(s=>s.status === where.status && s.usuarioId !== where.usuarioId?.not),
+    findUnique: async ({ where }) => data.find(s => s.id === where.id) || null,
     findFirst: async ({ where }) => data.find(s => s.id === where.id && s.usuarioId === where.usuarioId) || null,
     updateMany: async ({ where, data: change }) => { const s = data.find(s => s.id === where.id && s.usuarioId === where.usuarioId && s.status === where.status); if (!s) return { count: 0 }; Object.assign(s, change); return { count: 1 }; },
     create: async ({ data: item }) => { const out = { ...item, id: 's1', status: 'PENDENTE' }; data.push(out); return out; },
