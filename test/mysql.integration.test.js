@@ -43,6 +43,8 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
   const list = await fetch(base + '/servicos', { headers: { Authorization: `Bearer ${token}` } });
   assert.equal(list.status, 200);
   assert.equal((await list.json()).data.some(s => s.id === serviceId), true);
+  const badPage = await fetch(base + '/servicos?page=-1', { headers: { Authorization: `Bearer ${token}` } });
+  assert.equal(badPage.status,400);
   const cancelled = await fetch(base + `/servicos/${serviceId}/cancelar`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
   assert.equal(cancelled.status, 200);
   assert.equal((await cancelled.json()).data.status, 'CANCELADO');
