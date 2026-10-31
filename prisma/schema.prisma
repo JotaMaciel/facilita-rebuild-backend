@@ -12,7 +12,8 @@ model Usuario {
   senhaHash String    @map("senha_hash") @db.VarChar(255)
   papel     Papel     @default(CLIENTE)
   criadoEm  DateTime  @default(now()) @map("criado_em")
-  servicos  Servico[]
+  servicos  Servico[] @relation("ContratanteServicos")
+  servicosAceitos Servico[] @relation("PrestadorServicos")
   @@map("usuarios")
 }
 model Servico {
@@ -21,9 +22,12 @@ model Servico {
   categoria  String        @db.VarChar(80)
   status     StatusServico @default(PENDENTE)
   usuarioId  String        @map("usuario_id") @db.VarChar(36)
-  usuario    Usuario       @relation(fields: [usuarioId], references: [id])
+  usuario    Usuario       @relation("ContratanteServicos", fields: [usuarioId], references: [id])
+  prestadorId String? @map("prestador_id") @db.VarChar(36)
+  prestador Usuario? @relation("PrestadorServicos", fields: [prestadorId], references: [id])
   criadoEm   DateTime      @default(now()) @map("criado_em")
   @@index([usuarioId])
+  @@index([prestadorId])
   @@map("servicos")
 }
 enum Papel {
