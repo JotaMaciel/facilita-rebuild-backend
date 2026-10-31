@@ -78,24 +78,6 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       res.status(201).json({ data: service });
     } catch (e) { next(e); }
   });
-  app.get('/v1/facilita/servicos/:id', auth, async (req, res, next) => {
-    try {
-      const service = await db.servico.findFirst({ where: { id: req.params.id, usuarioId: req.auth.sub } });
-      if (!service) return res.status(404).json({ error: 'NOT_FOUND' });
-      res.json({ data: service });
-    } catch (e) { next(e); }
-  });
-  app.patch('/v1/facilita/servicos/:id/cancelar', auth, async (req, res, next) => {
-    try {
-      const result = await db.servico.updateMany({
-        where: { id: req.params.id, usuarioId: req.auth.sub, status: 'PENDENTE' },
-        data: { status: 'CANCELADO' },
-      });
-      if (!result.count) return res.status(409).json({ error: 'CANNOT_CANCEL', message: 'Serviço inexistente ou não cancelável' });
-      const service = await db.servico.findFirst({ where: { id: req.params.id, usuarioId: req.auth.sub } });
-      res.json({ data: service });
-    } catch (e) { next(e); }
-  });
   app.use((_req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
   app.use((err, _req, res, _next) => {
     console.error('API error', err);
