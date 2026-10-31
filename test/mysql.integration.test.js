@@ -153,6 +153,19 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
   const fresh2 = await fetch(base + '/auth/login', {method:'POST',headers,body:JSON.stringify({email,senha:'SenhaNova456!'})});
   assert.equal(fresh2.status,200);
   const secondToken = (await fresh2.json()).token;
+  const thirdLogin = await fetch(base + '/auth/login', {method:'POST',headers,body:JSON.stringify({email,senha:'SenhaNova456!'})});
+  assert.equal(thirdLogin.status,200);
+  const thirdToken = (await thirdLogin.json()).token;
+  const sessionList = await fetch(base + '/auth/sessoes',{headers:{Authorization:`Bearer ${secondToken}`}});
+  const otherSession = (await sessionList.json()).data.find(s=>!s.atual);
+  assert.ok(otherSession);
+  const deleteOther = await fetch(base + `/auth/sessoes/${otherSession.id}`,{method:'DELETE',headers:{Authorization:`Bearer ${secondToken}`}});
+  assert.equal(deleteOther.status,200);
+  const otherBlocked = await fetch(base + '/auth/me',{headers:{Authorization:`Bearer ${thirdToken}`}});
+  assert.equal(otherBlocked.status,401);
+  // Uma das sessões anteriores foi encerrada; a atual continua autorizada.
+  const stillAuthorized = await fetch(base + '/auth/me',{headers:{Authorization:`Bearer ${secondToken}`}});
+  assert.equal(stillAuthorized.status,200);
   const revokeAll = await fetch(base + '/auth/sair-de-todas',{method:'POST',headers:{Authorization:`Bearer ${secondToken}`}});
   assert.equal(revokeAll.status,200);
   const blockedAll = await fetch(base + '/auth/me',{headers:{Authorization:`Bearer ${secondToken}`}});
