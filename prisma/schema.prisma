@@ -74,3 +74,25 @@ model Notificacao {
   @@index([usuarioId, criadoEm])
   @@map("notificacoes")
 }
+
+model Sessao {
+  id String @id @default(uuid()) @db.VarChar(36)
+  usuarioId String @map("usuario_id") @db.VarChar(36)
+  tokenHash String @unique @map("token_hash") @db.VarChar(64)
+  expiraEm DateTime @map("expira_em")
+  revogada Boolean @default(false)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  @@index([usuarioId])
+  @@map("sessoes")
+}
+
+model RecuperacaoSenha {
+  id String @id @default(uuid()) @db.VarChar(36)
+  usuarioId String @map("usuario_id") @db.VarChar(36)
+  tokenHash String @unique @map("token_hash") @db.VarChar(64)
+  expiraEm DateTime @map("expira_em")
+  usado Boolean @default(false)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  @@index([usuarioId])
+  @@map("recuperacoes_senha")
+}
