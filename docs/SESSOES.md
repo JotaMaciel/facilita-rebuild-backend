@@ -12,3 +12,7 @@
 - Ainda não há interface de recuperação de senha, envio de e-mail, lista de dispositivos ou fechamento de todas as sessões por comando próprio.
 - O token JWT pode continuar válido criptograficamente após logout, mas não será autorizado pelo banco.
 - Não usar em produção antes de validação de migrações, segurança e limites de requisições.
+
+## Novas operações
+- `GET /v1/facilita/auth/sessoes`: lista até 50 sessões válidas do usuário, sem retornar tokens ou hashes.
+- `POST /v1/facilita/auth/sair-de-todas`: revoga todas as sessões do usuário, inclusive a atual; exige novo login.
