@@ -115,6 +115,23 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       res.json({ success: true });
     } catch (error) { next(error); }
   });
+  app.get('/v1/facilita/auth/sessoes', auth, async (req, res, next) => {
+    try {
+      const data = await db.sessao.findMany({
+        where: { usuarioId: req.auth.sub, revogada: false, expiraEm: { gt: new Date() } },
+        select: { id: true, criadoEm: true, expiraEm: true },
+        orderBy: { criadoEm: 'desc' },
+        take: 50,
+      });
+      res.json({ data: data.map(s => ({ ...s, atual: s.id === req.sessionId })) });
+    } catch (error) { next(error); }
+  });
+  app.post('/v1/facilita/auth/sair-de-todas', auth, async (req, res, next) => {
+    try {
+      await db.sessao.updateMany({ where: { usuarioId: req.auth.sub, revogada: false }, data: { revogada: true } });
+      res.json({ success: true });
+    } catch (error) { next(error); }
+  });
   app.get('/v1/facilita/auth/me', auth, async (req, res, next) => {
     try {
       const user = await db.usuario.findUnique({ where: { id: req.auth.sub } });
