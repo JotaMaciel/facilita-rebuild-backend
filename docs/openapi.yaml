@@ -1,0 +1,158 @@
+openapi: 3.0.3
+info:
+  title: Facilita Rebuild API
+  version: 0.2.0
+  description: Contrato inicial parcial da API, sem paridade com o Facilita original.
+servers:
+  - url: http://localhost:3000/v1/facilita
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ServicoInput:
+      type: object
+      required: [descricao, categoria]
+      properties:
+        descricao:
+          type: string
+          minLength: 5
+          maxLength: 500
+        categoria:
+          type: string
+          minLength: 2
+          maxLength: 80
+    MensagemInput:
+      type: object
+      required: [texto]
+      properties:
+        texto:
+          type: string
+          minLength: 1
+          maxLength: 2000
+paths:
+  /health:
+    get:
+      summary: Verifica API e MySQL
+      responses:
+        '200':
+          description: Disponível
+        '500':
+          description: Indisponível
+  /auth/registro:
+    post:
+      summary: Registra cliente ou prestador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nome, email, senha]
+              properties:
+                nome:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                senha:
+                  type: string
+                  minLength: 8
+                papel:
+                  type: string
+                  enum: [CLIENTE, PRESTADOR]
+      responses:
+        '201':
+          description: Criado
+        '409':
+          description: E-mail em uso
+  /auth/login:
+    post:
+      summary: Login e emissão de JWT
+      responses:
+        '200':
+          description: Autenticado
+        '401':
+          description: Credenciais inválidas
+  /auth/me:
+    get:
+      summary: Perfil autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil
+        '401':
+          description: Não autenticado
+  /servicos:
+    get:
+      summary: Lista serviços do solicitante
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista
+    post:
+      summary: Cria solicitação
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServicoInput'
+      responses:
+        '201':
+          description: Criado
+  /servicos/disponiveis:
+    get:
+      summary: Solicitações abertas para prestadores
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista
+        '403':
+          description: Acesso negado
+  /servicos/{id}/mensagens:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Histórico de mensagens de participantes
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Mensagens
+        '404':
+          description: Não encontrado
+    post:
+      summary: Envia mensagem à conversa
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MensagemInput'
+      responses:
+        '201':
+          description: Mensagem criada
+        '403':
+          description: Acesso negado
+  /notificacoes:
+    get:
+      summary: Notificações do usuário autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notificações
