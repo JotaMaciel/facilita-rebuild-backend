@@ -1,0 +1,16 @@
+# Recuperação de senha — implementação inicial
+
+## Fluxo
+1. `POST /v1/facilita/auth/recuperar-senha` recebe e-mail e retorna resposta neutra, mesmo para contas inexistentes.
+2. Para uma conta cadastrada, cria um token criptograficamente aleatório de uso único, guarda apenas SHA-256 e define validade de 15 minutos.
+3. `POST /v1/facilita/auth/redefinir-senha` recebe `{ "token": "...", "senha": "..." }`; verifica expiração e consumo e atualiza o hash da senha.
+
+## Restrições
+**O envio de e-mail ainda não existe.** Não há recuperação de senha utilizável em produção. Para testes locais isolados, `DEV_PASSWORD_RESET_LOG=true` pode escrever o token em logs. Nunca ligar essa opção em servidores compartilhados nem publicar logs que contenham tokens.
+
+A troca de senha ainda **não revoga JWTs emitidos anteriormente**. É necessário implementar armazenamento e revogação de sessões efetivos antes de produção. O modelo Prisma `Sessao` ainda não está conectado ao middleware de autenticação.
+
+Também faltam limpeza de tokens expirados, controle de repetição por conta, remetente de e-mail verificado, filas e observabilidade.
+
+## Segurança
+Não devolver o token de recuperação em respostas da API. Não usar links de produção com URLs previsíveis. Usar HTTPS e restringir as operações ao ambiente controlado até completar o fluxo.
