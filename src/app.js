@@ -65,7 +65,7 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
     } catch (e) { next(e); }
   });
   app.get('/v1/facilita/servicos', auth, async (_req, res, next) => {
-    try { res.json({ data: await db.servico.findMany({ orderBy: { criadoEm: 'desc' }, take: 100 }) }); }
+    try { res.json({ data: await db.servico.findMany({ where: { usuarioId: _req.auth.sub }, orderBy: { criadoEm: 'desc' }, take: 100 }) }); }
     catch (e) { next(e); }
   });
   app.post('/v1/facilita/servicos', auth, async (req, res, next) => {
@@ -74,6 +74,24 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
     try {
       const service = await db.servico.create({ data: { ...parsed.data, usuarioId: req.auth.sub } });
       res.status(201).json({ data: service });
+    } catch (e) { next(e); }
+  });
+  app.get('/v1/facilita/servicos/:id', auth, async (req, res, next) => {
+    try {
+      const service = await db.servico.findFirst({ where: { id: req.params.id, usuarioId: req.auth.sub } });
+      if (!service) return res.status(404).json({ error: 'NOT_FOUND' });
+      res.json({ data: service });
+    } catch (e) { next(e); }
+  });
+  app.patch('/v1/facilita/servicos/:id/cancelar', auth, async (req, res, next) => {
+    try {
+      const result = await db.servico.updateMany({
+        where: { id: req.params.id, usuarioId: req.auth.sub, status: 'PENDENTE' },
+        data: { status: 'CANCELADO' },
+      });
+      if (!result.count) return res.status(409).json({ error: 'CANNOT_CANCEL', message: 'Serviço inexistente ou não cancelável' });
+      const service = await db.servico.findFirst({ where: { id: req.params.id, usuarioId: req.auth.sub } });
+      res.json({ data: service });
     } catch (e) { next(e); }
   });
   app.use((_req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
