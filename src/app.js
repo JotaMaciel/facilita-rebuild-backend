@@ -78,6 +78,40 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       res.status(201).json({ data: service });
     } catch (e) { next(e); }
   });
+  app.get('/v1/facilita/servicos/disponiveis', auth, async (req, res, next) => {
+    try {
+      const user = await db.usuario.findUnique({ where: { id: req.auth.sub } });
+      if (!user || user.papel !== 'PRESTADOR') return res.status(403).json({ error: 'FORBIDDEN' });
+      const data = await db.servico.findMany({ where: { status: 'PENDENTE', usuarioId: { not: req.auth.sub } }, orderBy: { criadoEm: 'desc' }, take: 100 });
+      res.json({ data });
+    } catch (e) { next(e); }
+  });
+  app.get('/v1/facilita/servicos/:id', auth, async (req, res, next) => {
+    try {
+      const data = await db.servico.findFirst({ where: { id: req.params.id, OR: [{ usuarioId: req.auth.sub }, { prestadorId: req.auth.sub }] } });
+      if (!data) return res.status(404).json({ error: 'NOT_FOUND' });
+      res.json({ data });
+    } catch (e) { next(e); }
+  });
+  app.patch('/v1/facilita/servicos/:id/cancelar', auth, async (req, res, next) => {
+    try {
+      const result = await db.servico.updateMany({ where: { id: req.params.id, usuarioId: req.auth.sub, status: 'PENDENTE' }, data: { status: 'CANCELADO' } });
+      if (!result.count) return res.status(409).json({ error: 'CANNOT_CANCEL' });
+      res.json({ data: await db.servico.findUnique({ where: { id: req.params.id } }) });
+    } catch (e) { next(e); }
+  });
+  app.patch('/v1/facilita/servicos/:id/aceitar', auth, async (req, res, next) => {
+    try {
+      const user = await db.usuario.findUnique({ where: { id: req.auth.sub } });
+      if (!user || user.papel !== 'PRESTADOR') return res.status(403).json({ error: 'FORBIDDEN' });
+      const result = await db.servico.updateMany({
+        where: { id: req.params.id, status: 'PENDENTE', usuarioId: { not: req.auth.sub }, prestadorId: null },
+        data: { status: 'ACEITO', prestadorId: req.auth.sub },
+      });
+      if (!result.count) return res.status(409).json({ error: 'CANNOT_ACCEPT' });
+      res.json({ data: await db.servico.findUnique({ where: { id: req.params.id } }) });
+    } catch (e) { next(e); }
+  });
   app.use((_req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
   app.use((err, _req, res, _next) => {
     console.error('API error', err);
