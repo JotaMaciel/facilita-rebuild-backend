@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import { z } from 'zod';
 import { hashPassword, verifyPassword, signToken, verifyToken } from './security.js';
+import { randomToken, tokenHash, expiresAt } from './tokens.js';
 
 const credentialsSchema = z.object({
   email: z.email().max(191).transform(v => v.toLowerCase()),
@@ -58,6 +59,35 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       if (!user || !(await verifyPassword(parsed.data.senha, user.senhaHash))) return res.status(401).json({ error: 'INVALID_CREDENTIALS' });
       res.json({ token: signToken(user, jwtSecret), usuario: publicUser(user) });
     } catch (e) { next(e); }
+  });
+  app.post('/v1/facilita/auth/recuperar-senha', authLimiter, async (req, res, next) => {
+    const parsed = z.object({ email: z.email().max(191) }).safeParse(req.body);
+    if (!parsed.success) return invalid(res, parsed);
+    try {
+      const user = await db.usuario.findUnique({ where: { email: parsed.data.email.toLowerCase() } });
+      if (user) {
+        const token = randomToken();
+        await db.recuperacaoSenha.create({ data: { usuarioId: user.id, tokenHash: tokenHash(token), expiraEm: expiresAt(15) } });
+        // Apenas desenvolvimento controlado: não envia o token na resposta.
+        // Conectar um provedor de e-mail antes de liberar recuperação em produção.
+        if (process.env.NODE_ENV !== 'production' && process.env.DEV_PASSWORD_RESET_LOG === 'true') {
+          console.warn('Token de recuperação local (não usar em produção):', token);
+        }
+      }
+      res.json({ message: 'Se o e-mail existir, as instruções de recuperação serão enviadas.' });
+    } catch (error) { next(error); }
+  });
+  app.post('/v1/facilita/auth/redefinir-senha', authLimiter, async (req, res, next) => {
+    const parsed = z.object({ token: z.string().min(30).max(256), senha: z.string().min(8).max(128) }).safeParse(req.body);
+    if (!parsed.success) return invalid(res, parsed);
+    try {
+      const record = await db.recuperacaoSenha.findUnique({ where: { tokenHash: tokenHash(parsed.data.token) } });
+      if (!record || record.usado || record.expiraEm <= new Date()) return res.status(400).json({ error: 'INVALID_RESET_TOKEN' });
+      const updated = await db.recuperacaoSenha.updateMany({ where: { id: record.id, usado: false, expiraEm: { gt: new Date() } }, data: { usado: true } });
+      if (!updated.count) return res.status(400).json({ error: 'INVALID_RESET_TOKEN' });
+      await db.usuario.update({ where: { id: record.usuarioId }, data: { senhaHash: await hashPassword(parsed.data.senha) } });
+      res.json({ success: true });
+    } catch (error) { next(error); }
   });
   app.get('/v1/facilita/auth/me', auth, async (req, res, next) => {
     try {
