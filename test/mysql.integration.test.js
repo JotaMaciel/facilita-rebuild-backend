@@ -46,4 +46,35 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
   const cancelled = await fetch(base + `/servicos/${serviceId}/cancelar`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
   assert.equal(cancelled.status, 200);
   assert.equal((await cancelled.json()).data.status, 'CANCELADO');
+  // Segundo serviço: ciclo completo com usuário prestador independente.
+  const created2 = await fetch(base + '/servicos', { method:'POST', headers: { ...headers, Authorization: 'Bearer ' + token }, body: JSON.stringify({ descricao:'Ajudar com transporte de compras', categoria:'Entrega' }) });
+  assert.equal(created2.status, 201);
+  const secondId = (await created2.json()).data.id;
+  const providerEmail = `prestador-${crypto.randomUUID()}@example.test`;
+  const registeredProvider = await fetch(base + '/auth/registro', { method:'POST', headers, body: JSON.stringify({ nome:'Prestador Teste', email:providerEmail, senha:'SenhaSegura123!', papel:'PRESTADOR' }) });
+  assert.equal(registeredProvider.status, 201);
+  const providerId = (await registeredProvider.json()).data.id;
+  try {
+    const loginProvider = await fetch(base + '/auth/login', { method:'POST', headers, body:JSON.stringify({ email:providerEmail, senha:'SenhaSegura123!' }) });
+    assert.equal(loginProvider.status, 200);
+    const providerToken = (await loginProvider.json()).token;
+    const providerHeaders = { Authorization: `Bearer ${providerToken}` };
+    const available = await fetch(base + '/servicos/disponiveis', { headers: providerHeaders });
+    assert.equal(available.status, 200);
+    assert.equal((await available.json()).data.some(item=>item.id===secondId),true);
+    for (const [action, expected] of [['aceitar','ACEITO'],['iniciar','EM_ANDAMENTO'],['concluir','CONCLUIDO']]) {
+      const response = await fetch(base + `/servicos/${secondId}/${action}`, { method:'PATCH', headers:providerHeaders });
+      assert.equal(response.status, 200);
+      assert.equal((await response.json()).data.status, expected);
+    }
+    const review = await fetch(base + `/servicos/${secondId}/avaliacao`, { method:'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body:JSON.stringify({ nota:5, comentario:'Atendimento excelente' }) });
+    assert.equal(review.status,201);
+    const duplicate = await fetch(base + `/servicos/${secondId}/avaliacao`, { method:'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body:JSON.stringify({ nota:4 }) });
+    assert.equal(duplicate.status,409);
+  } finally {
+    await prisma.avaliacao.deleteMany({ where: { servicoId: secondId } });
+    await prisma.servico.deleteMany({ where: { id: secondId } });
+    await prisma.usuario.deleteMany({ where: { id: providerId } });
+  }
+
 });
