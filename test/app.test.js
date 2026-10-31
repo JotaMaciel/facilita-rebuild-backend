@@ -49,3 +49,9 @@ test('registro, login, criação de serviço', async () => {
   const repeat = await fetch(url + '/servicos/s1/cancelar', { method: 'PATCH', headers: { Authorization: 'Bearer ' + token } });
   assert.equal(repeat.status, 409);
 });
+
+test('liveness funciona mesmo que banco esteja indisponível', async () => {
+  const response = await fetch(url + '/live');
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { status: 'alive' });
+});
