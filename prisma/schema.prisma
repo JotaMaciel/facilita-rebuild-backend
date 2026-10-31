@@ -53,3 +53,24 @@ model Avaliacao {
   criadoEm DateTime @default(now()) @map("criado_em")
   @@map("avaliacoes")
 }
+
+model Mensagem {
+  id String @id @default(uuid()) @db.VarChar(36)
+  servicoId String @map("servico_id") @db.VarChar(36)
+  autorId String @map("autor_id") @db.VarChar(36)
+  texto String @db.VarChar(2000)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  @@index([servicoId, criadoEm])
+  @@map("mensagens")
+}
+
+model Notificacao {
+  id String @id @default(uuid()) @db.VarChar(36)
+  usuarioId String @map("usuario_id") @db.VarChar(36)
+  titulo String @db.VarChar(150)
+  texto String @db.VarChar(500)
+  lida Boolean @default(false)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  @@index([usuarioId, criadoEm])
+  @@map("notificacoes")
+}
