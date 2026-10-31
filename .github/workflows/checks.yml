@@ -32,9 +32,8 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: npm run db:generate
-      - name: Generate baseline SQL for review
-        run: npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script
-      - run: npm run db:push
+      - run: npm run db:deploy
+      - run: npm run db:status
       - run: npm test
       - run: npm run test:integration
   docker-build:
