@@ -132,6 +132,18 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
       res.json({ success: true });
     } catch (error) { next(error); }
   });
+  app.delete('/v1/facilita/auth/sessoes/:id', auth, async (req, res, next) => {
+    const parsed = z.uuid().safeParse(req.params.id);
+    if (!parsed.success) return res.status(400).json({ error: 'INVALID_SESSION_ID' });
+    try {
+      const result = await db.sessao.updateMany({
+        where: { id: parsed.data, usuarioId: req.auth.sub, revogada: false },
+        data: { revogada: true },
+      });
+      if (!result.count) return res.status(404).json({ error: 'NOT_FOUND' });
+      res.json({ success: true, current: parsed.data === req.sessionId });
+    } catch (error) { next(error); }
+  });
   app.get('/v1/facilita/auth/me', auth, async (req, res, next) => {
     try {
       const user = await db.usuario.findUnique({ where: { id: req.auth.sub } });
