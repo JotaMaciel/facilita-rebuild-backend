@@ -86,8 +86,7 @@ test('cadastro rejeita dados inválidos antes de gravar', async () => {
   for (const body of [
     { nome: 'A', email: 'email-invalido', senha: '123', papel: 'CLIENTE' },
     { nome: 'Pessoa Teste', email: 'pessoa@example.com', senha: 'senhaForte123', papel: 'ADMIN' },
-    { nome: 'Pessoa Teste', email: 'pessoa@example.com', senha: 'senhaForte123', papel: 'CLIENTE', extra: 'ignorado' },
-  ].slice(0, 2)) {
+  ]) {
     const response = await post('/auth/registro', body);
     assert.equal(response.status, 400);
     const payload = await response.json();
