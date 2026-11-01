@@ -1,4 +1,5 @@
 import { test } from 'node:test';
+import { createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { hashPassword, verifyPassword, signToken, verifyToken } from '../src/security.js';
 test('scrypt: valida senha e rejeita senha incorreta', async () => {
@@ -21,4 +22,24 @@ test('JWT rejeita tokens emitidos no futuro ou com audiência diferente', () => 
   assert.equal(claims.iss, 'facilita-rebuild');
   assert.equal(claims.aud, 'facilita-web');
   assert.equal(verifyToken(token, secret)?.sub, 'u1');
+});
+
+test('JWT rejeita expiração, emissão futura, issuer e audience incorretos', () => {
+
+  const secret = 'uma-chave-de-testes-segura-com-mais-de-32-caracteres';
+  const valid = signToken({ id:'user-1', papel:'CLIENTE' },secret);
+  const [header, encoded] = valid.split('.');
+  const original = JSON.parse(Buffer.from(encoded,'base64url').toString());
+  const now = Math.floor(Date.now()/1000);
+  for (const changes of [
+    {exp:now-1},
+    {iat:now+3600},
+    {iss:'outro-sistema'},
+    {aud:'outro-cliente'},
+    {sub:''},
+  ]) {
+    const payload = Buffer.from(JSON.stringify({...original,...changes})).toString('base64url');
+    const sig = createHmac('sha256',secret).update(header+'.'+payload).digest('base64url');
+    assert.equal(verifyToken(header+'.'+payload+'.'+sig,secret),null);
+  }
 });
