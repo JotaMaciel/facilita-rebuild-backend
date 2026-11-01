@@ -166,6 +166,13 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     assert.ok(notice);
     const marked = await fetch(base+`/notificacoes/${notice.id}/lida`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});
     assert.equal(marked.status,200);
+    const customerCannotFinish = await fetch(base + `/servicos/${secondId}/concluir`, {
+      method:'PATCH',headers:{Authorization:`Bearer ${token}`}
+    });
+    assert.equal(customerCannotFinish.status,409);
+    const afterDeniedFinish = await prisma.servico.findUnique({where:{id:secondId}});
+    assert.equal(afterDeniedFinish.status,'EM_ANDAMENTO');
+    assert.equal(afterDeniedFinish.prestadorId,providerId);
     const duplicateStart = await fetch(base + `/servicos/${secondId}/iniciar`,{method:'PATCH',headers:providerHeaders});
     assert.equal(duplicateStart.status,409);
     assert.equal((await prisma.servico.findUnique({where:{id:secondId}})).status,'EM_ANDAMENTO');
