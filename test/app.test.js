@@ -66,3 +66,18 @@ test('liveness funciona mesmo que banco esteja indisponível', async () => {
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { status: 'alive' });
 });
+
+test('tokens ausentes, malformados e adulterados não autorizam acesso', async () => {
+  const paths = ['/auth/me', '/auth/sessoes', '/servicos', '/notificacoes'];
+  const invalidTokens = [undefined, 'Bearer', 'Bearer token-invalido', 'Bearer a.b.c', 'Basic abc'];
+  for (const path of paths) {
+    for (const authorization of invalidTokens) {
+      const response = await fetch(url + path, {
+        headers: authorization ? { Authorization: authorization } : {},
+      });
+      assert.equal(response.status, 401, path + ' aceitou ' + (authorization || 'ausência de token'));
+      assert.equal((await response.json()).error, 'UNAUTHORIZED');
+      assert.ok(response.headers.get('x-request-id'));
+    }
+  }
+});
