@@ -43,3 +43,11 @@ test('JWT rejeita expiração, emissão futura, issuer e audience incorretos', (
     assert.equal(verifyToken(header+'.'+payload+'.'+sig,secret),null);
   }
 });
+
+test('JWT de outro ambiente não é aceito mesmo com claims válidos', () => {
+  const productionSecret = 'chave-do-ambiente-principal-com-mais-de-32-caracteres';
+  const stagingSecret = 'chave-do-ambiente-de-testes-com-mais-de-32-caracteres';
+  const token = signToken({ id:'user-2', papel:'CLIENTE' },stagingSecret);
+  assert.equal(verifyToken(token,productionSecret),null);
+  assert.equal(verifyToken(token,stagingSecret)?.sub,'user-2');
+});
