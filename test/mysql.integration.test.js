@@ -172,6 +172,9 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     const completion = await fetch(base + `/servicos/${secondId}/concluir`, {method:'PATCH',headers:providerHeaders});
     assert.equal(completion.status,200);
     assert.equal((await completion.json()).data.status,'CONCLUIDO');
+    const repeatedCompletion = await fetch(base + `/servicos/${secondId}/concluir`,{method:'PATCH',headers:providerHeaders});
+    assert.equal(repeatedCompletion.status,409);
+    assert.equal((await prisma.servico.findUnique({where:{id:secondId}})).status,'CONCLUIDO');
     const finishedChat = await fetch(base + `/servicos/${secondId}/mensagens`, {method:'POST',headers:{...headers,Authorization:`Bearer ${providerToken}`},body:JSON.stringify({texto:'Mensagem após concluir'})});
     assert.equal(finishedChat.status,403);
     const review = await fetch(base + `/servicos/${secondId}/avaliacao`, { method:'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body:JSON.stringify({ nota:5, comentario:'Atendimento excelente' }) });
