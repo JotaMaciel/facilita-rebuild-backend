@@ -142,7 +142,7 @@ test('JWT adulterado é rejeitado mesmo com estrutura válida', async () => {
   const alteredPayload = Buffer.from(JSON.stringify({...claims,role:'ADMIN'})).toString('base64url');
   for (const forged of [
     [header,alteredPayload,signature].join('.'),
-    [header,payload,signature.slice(0,-1)+(signature.at(-1)==='A'?'B':'A')].join('.'),
+    [header,payload,(signature[0]==='A'?'B':'A')+signature.slice(1)].join('.'),
   ]) {
     const response = await fetch(url+'/auth/me',{headers:{Authorization:'Bearer '+forged}});
     assert.equal(response.status,401);
