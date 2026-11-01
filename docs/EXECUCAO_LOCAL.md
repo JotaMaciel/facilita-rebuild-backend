@@ -53,3 +53,6 @@ Para verificar a API localmente, execute `npm test` e, com o MySQL iniciado e as
 - Os testes automatizados cobrem cenários definidos em ambiente de CI. Uma implantação em produção exige revisão de segredos, configuração de CORS, HTTPS, observabilidade, backups e testes de deploy/restart com dados persistidos.
 
 **Observação:** `db:deploy` é indicado para uma base de testes **vazia**. Em banco existente já sincronizado via `db:push`, leia `docs/MIGRACOES.md` antes de executar.
+
+### Persistência após reiniciar a API
+O teste `test/mysql.integration.test.js` também encerra o servidor HTTP, desconecta e reconecta o Prisma e inicia uma nova instância da API, sem recriar o banco. Em seguida, autentica a consulta com a sessão anterior e verifica que o serviço persistido continua disponível no MySQL. Esse cenário cobre a reinicialização da API, **não** substitui um teste de reinicialização do contêiner MySQL ou a validação de backup e restauração em produção.
