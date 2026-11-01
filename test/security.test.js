@@ -78,3 +78,22 @@ test('JWT rejeita expiração igual ou anterior à emissão', () => {
     assert.equal(verifyToken(header+'.'+encoded+'.'+signature,secret),null);
   }
 });
+
+test('JWT rejeita claims obrigatórios ausentes ou com tipos incorretos', () => {
+  const secret = 'uma-chave-de-testes-segura-com-mais-de-32-caracteres';
+  const [header,payload] = signToken({id:'user-5',papel:'CLIENTE'},secret).split('.');
+  const original = JSON.parse(Buffer.from(payload,'base64url').toString());
+  const cases = [
+    {...original,sub:123},
+    {...original,sub:null},
+    {...original,iat:'ontem'},
+    {...original,exp:'amanha'},
+    {...original,iss:null},
+    {...original,aud:[]},
+  ];
+  for (const claims of cases) {
+    const encoded = Buffer.from(JSON.stringify(claims)).toString('base64url');
+    const signature = createHmac('sha256',secret).update(header+'.'+encoded).digest('base64url');
+    assert.equal(verifyToken(header+'.'+encoded+'.'+signature,secret),null);
+  }
+});
