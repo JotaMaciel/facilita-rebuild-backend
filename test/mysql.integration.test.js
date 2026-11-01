@@ -105,6 +105,20 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
       const outsiderToken = (await outsiderLogin.json()).token;
       const blocked = await fetch(base + `/servicos/${secondId}/mensagens`, { headers:{Authorization:`Bearer ${outsiderToken}`} });
       assert.equal(blocked.status,404);
+      const deniedPost = await fetch(base + `/servicos/${secondId}/mensagens`, {
+        method:'POST', headers:{...headers,Authorization:`Bearer ${outsiderToken}`},
+        body:JSON.stringify({texto:'Tentativa de acesso não autorizado'})
+      });
+      assert.equal(deniedPost.status,403);
+      const deniedCancel = await fetch(base + `/servicos/${secondId}/cancelar`, {
+        method:'PATCH', headers:{Authorization:`Bearer ${outsiderToken}`}
+      });
+      assert.equal(deniedCancel.status,403);
+      const deniedReview = await fetch(base + `/servicos/${secondId}/avaliacao`, {
+        method:'POST', headers:{...headers,Authorization:`Bearer ${outsiderToken}`},
+        body:JSON.stringify({nota:1,comentario:'Avaliação indevida'})
+      });
+      assert.ok([403,404].includes(deniedReview.status));
     } finally {
       await prisma.sessao.deleteMany({ where:{ usuarioId: outsiderId } });
       await prisma.usuario.deleteMany({ where:{ id: outsiderId } });
