@@ -23,3 +23,6 @@ O teste HTTP com MySQL utiliza um terceiro usuário autenticado que não partici
 
 ## Isolamento de sessões entre usuários
 O teste de integração com MySQL confirma que um terceiro usuário autenticado não vê a sessão do prestador em `GET /auth/sessoes` nem consegue revogá-la com `DELETE /auth/sessoes/:id` (HTTP 404). Depois da tentativa, o prestador continua autenticado. O controle é realizado pelo BackEnd, usando o identificador do usuário validado na sessão.
+
+## Rejeição de credenciais inválidas
+Os testes unitários exercitam as rotas privadas `/auth/me`, `/auth/sessoes`, `/servicos` e `/notificacoes` com cabeçalho `Authorization` ausente, incompleto, com esquema diferente de Bearer e tokens malformados. Todas devem devolver HTTP 401 com `UNAUTHORIZED` e identificador `X-Request-ID`, sem permitir acesso aos dados.
