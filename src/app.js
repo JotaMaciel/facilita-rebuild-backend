@@ -300,7 +300,8 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
   app.use((_req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
   app.use((err, _req, res, _next) => {
     console.error('API error', { requestId: _req.requestId, method: _req.method, path: _req.path, message: err.message });
-    res.status(500).json({ error: 'INTERNAL_ERROR' });
+    if (res.headersSent) return _next(err);
+    res.status(500).json({ error: 'INTERNAL_ERROR', requestId: _req.requestId });
   });
   return app;
 }
