@@ -176,6 +176,7 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     const duplicateStart = await fetch(base + `/servicos/${secondId}/iniciar`,{method:'PATCH',headers:providerHeaders});
     assert.equal(duplicateStart.status,409);
     assert.equal((await prisma.servico.findUnique({where:{id:secondId}})).status,'EM_ANDAMENTO');
+    const notificationCountBeforeCompletion = await prisma.notificacao.count({where:{usuarioId:userId}});
     const completion = await fetch(base + `/servicos/${secondId}/concluir`, {method:'PATCH',headers:providerHeaders});
     assert.equal(completion.status,200);
     assert.equal((await completion.json()).data.status,'CONCLUIDO');
@@ -184,9 +185,12 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     });
     assert.equal(cannotCancelFinished.status,409);
     assert.equal((await prisma.servico.findUnique({where:{id:secondId}})).prestadorId,providerId);
+    const notificationCountAfterCompletion = await prisma.notificacao.count({where:{usuarioId:userId}});
     const repeatedCompletion = await fetch(base + `/servicos/${secondId}/concluir`,{method:'PATCH',headers:providerHeaders});
     assert.equal(repeatedCompletion.status,409);
     assert.equal((await prisma.servico.findUnique({where:{id:secondId}})).status,'CONCLUIDO');
+    assert.equal(await prisma.notificacao.count({where:{usuarioId:userId}}),notificationCountAfterCompletion,'repetir conclusão não deve criar notificações');
+    assert.ok(notificationCountAfterCompletion>=notificationCountBeforeCompletion);
     const finishedChat = await fetch(base + `/servicos/${secondId}/mensagens`, {method:'POST',headers:{...headers,Authorization:`Bearer ${providerToken}`},body:JSON.stringify({texto:'Mensagem após concluir'})});
     assert.equal(finishedChat.status,403);
     const review = await fetch(base + `/servicos/${secondId}/avaliacao`, { method:'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body:JSON.stringify({ nota:5, comentario:'Atendimento excelente' }) });
