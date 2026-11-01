@@ -16,7 +16,7 @@ const db = {
     updateMany: async () => ({ count: 1 }),
   },
   servico: {
-    findMany: async ({ where }) => where.usuarioId ? data.filter(s => s.usuarioId === where.usuarioId) : data.filter(s=>s.status === where.status && s.usuarioId !== where.usuarioId?.not),
+    findMany: async ({ where, skip = 0, take }) => { const rows = where.usuarioId ? data.filter(s => s.usuarioId === where.usuarioId) : data.filter(s=>s.status === where.status && s.usuarioId !== where.usuarioId?.not); return rows.slice(skip, take === undefined ? undefined : skip + take); },
     findUnique: async ({ where }) => data.find(s => s.id === where.id) || null,
     findFirst: async ({ where }) => data.find(s => s.id === where.id && s.usuarioId === where.usuarioId) || null,
     updateMany: async ({ where, data: change }) => { const s = data.find(s => s.id === where.id && s.usuarioId === where.usuarioId && s.status === where.status); if (!s) return { count: 0 }; Object.assign(s, change); return { count: 1 }; },
@@ -147,5 +147,29 @@ test('JWT adulterado é rejeitado mesmo com estrutura válida', async () => {
     const response = await fetch(url+'/auth/me',{headers:{Authorization:'Bearer '+forged}});
     assert.equal(response.status,401);
     assert.equal((await response.json()).error,'UNAUTHORIZED');
+  }
+});
+
+test('listagem de serviços informa corretamente próxima página', async () => {
+  const login = await post('/auth/login', {email:'joao@example.com',senha:'senhaForte123'});
+  assert.equal(login.status,200);
+  const {token} = await login.json();
+  const originals = data.slice();
+  try {
+    data.length = 0;
+    for (let i=0;i<21;i++) data.push({id:'page-'+i,usuarioId:'u1',status:'PENDENTE'});
+    const get = page => fetch(url+'/servicos?page='+page,{headers:{Authorization:'Bearer '+token}});
+    const first = await get(1);
+    assert.equal(first.status,200);
+    const one = await first.json();
+    assert.equal(one.data.length,20);
+    assert.equal(one.pageSize,20);
+    assert.equal(one.hasNextPage,true);
+    const second = await get(2);
+    const two = await second.json();
+    assert.equal(two.data.length,1);
+    assert.equal(two.hasNextPage,false);
+  } finally {
+    data.splice(0,data.length,...originals);
   }
 });
