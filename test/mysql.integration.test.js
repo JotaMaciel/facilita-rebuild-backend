@@ -47,6 +47,21 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
   assert.equal(meBeforeLogout.status, 200);
   const unauthorized = await fetch(base + '/servicos');
   assert.equal(unauthorized.status, 401);
+  const beforeInvalidCreate = await prisma.servico.count({ where: { usuarioId: userId } });
+  for (const invalid of [
+    { descricao: 'curta', categoria: 'A' },
+    { descricao: 'x'.repeat(501), categoria: 'Compras' },
+    { descricao: 'Solicitação válida', categoria: 'x'.repeat(81) },
+  ]) {
+    const rejected = await fetch(base + '/servicos', {
+      method: 'POST', headers: { ...headers, Authorization: `Bearer ${token}` },
+      body: JSON.stringify(invalid),
+    });
+    assert.equal(rejected.status, 400);
+    assert.equal((await rejected.json()).error, 'VALIDATION_ERROR');
+  }
+  assert.equal(await prisma.servico.count({ where: { usuarioId: userId } }), beforeInvalidCreate,
+    'requisições inválidas não devem persistir serviços no MySQL');
   const created = await fetch(base + '/servicos', { method: 'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body: JSON.stringify({ descricao: 'Comprar remédios na farmácia', categoria: 'Compras' }) });
   assert.equal(created.status, 201);
   serviceId = (await created.json()).data.id;
