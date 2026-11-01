@@ -16,3 +16,6 @@ Os testes automatizados verificam o formato UUID v4, a unicidade por requisiçã
 
 ## Erros internos
 Respostas HTTP 500 usam o formato `{ "error": "INTERNAL_ERROR", "requestId": "<uuid>" }`. O `requestId` corresponde ao cabeçalho `X-Request-ID`. Detalhes de exceções e mensagens do banco permanecem apenas nos logs do servidor e não são incluídos na resposta pública. O tratamento respeita respostas que já tenham enviado cabeçalhos.
+
+## Erros de entrada
+Corpos JSON inválidos retornam HTTP `400` com `error: INVALID_JSON`, e corpos maiores que o limite configurado de 100 KB retornam HTTP `413` com `error: PAYLOAD_TOO_LARGE`. Ambas as respostas incluem `requestId`, correspondente ao cabeçalho `X-Request-ID`, sem reproduzir os dados recebidos. Erros inesperados continuam sendo retornados como HTTP `500` e `INTERNAL_ERROR`.
