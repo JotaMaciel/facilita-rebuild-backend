@@ -59,3 +59,6 @@ O teste unitário confirma que um JWT assinado com a chave de homologação é a
 
 ## Cabeçalho JWT
 O teste unitário cria tokens assinados com HMAC-SHA256, porém declara no cabeçalho `alg: none`, `alg: HS512` ou um tipo (`typ`) diferente de `JWT`. Todos devem ser rejeitados, mesmo com assinatura matematicamente válida, para garantir que o verificador aceite somente o algoritmo e tipo esperados.
+
+## Consistência temporal do JWT
+O verificador exige que `exp` seja posterior a `iat`, além de não ter vencido e de não ter sido emitido no futuro. Testes com tokens assinados contendo `exp` igual ou anterior a `iat` garantem rejeição mesmo quando a assinatura é válida.
