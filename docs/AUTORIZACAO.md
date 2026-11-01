@@ -50,3 +50,6 @@ A tentativa adicional do prestador perdedor também é acompanhada de uma contag
 
 ## Assinatura de JWT
 Um teste cria um JWT legítimo, modifica o papel declarado no payload sem atualizar a assinatura e, em outra tentativa, modifica a assinatura. A API deve rejeitar ambos com `401 UNAUTHORIZED`, impedindo adulteração de permissões.
+
+## Validação dos claims JWT
+Os testes unitários geram tokens assinados com a chave de teste e alteram individualmente campos de expiração (`exp`), emissão futura (`iat`), emissor (`iss`), público-alvo (`aud`) e identificador vazio (`sub`). Mesmo com assinatura criptográfica correta, tokens com claims inválidos devem ser rejeitados por `verifyToken`.
