@@ -36,3 +36,5 @@ O teste de integração com MySQL também consulta a quantidade de serviços per
 
 ## Transições de estado no MySQL
 A integração HTTP com MySQL verifica que um serviço `PENDENTE` não pode ser concluído diretamente, que a transição `iniciar` não pode ser repetida após `EM_ANDAMENTO` e que `concluir` não pode ser executado novamente após `CONCLUIDO`. Cada tentativa inválida deve responder `409`, preservando o estado armazenado no banco.
+
+Os testes também confirmam que o cliente não consegue concluir um serviço iniciado pelo prestador atribuído e que um serviço já concluído não pode ser cancelado. Em ambos os casos, a API deve responder `409`, mantendo o estado e o `prestadorId` no MySQL.
