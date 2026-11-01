@@ -38,3 +38,5 @@ O teste de integração com MySQL também consulta a quantidade de serviços per
 A integração HTTP com MySQL verifica que um serviço `PENDENTE` não pode ser concluído diretamente, que a transição `iniciar` não pode ser repetida após `EM_ANDAMENTO` e que `concluir` não pode ser executado novamente após `CONCLUIDO`. Cada tentativa inválida deve responder `409`, preservando o estado armazenado no banco.
 
 Os testes também confirmam que o cliente não consegue concluir um serviço iniciado pelo prestador atribuído e que um serviço já concluído não pode ser cancelado. A conclusão tentada pelo cliente retorna `403` por falta de permissão, enquanto o cancelamento após conclusão retorna `409` por conflito de estado. O status e o `prestadorId` permanecem inalterados no MySQL.
+
+O teste de integração também confere a quantidade de notificações antes e depois de repetir a conclusão de um serviço. A repetição rejeitada com `409` não pode gerar novas notificações para o cliente, evitando efeitos colaterais duplicados.
