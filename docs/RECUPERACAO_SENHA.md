@@ -17,3 +17,6 @@ Não devolver o token de recuperação em respostas da API. Não usar links de p
 
 ## Interface web
 A interface permite solicitar redefinição e informar token no ambiente de desenvolvimento. **Ainda não existe entrega por e-mail**: o usuário não receberá instruções sem uma integração de e-mail configurada. Não divulgar esta funcionalidade como operacional em produção.
+
+## Testes de revogação após recuperação
+Após redefinir a senha, o teste de integração com MySQL tenta consultar sessões, serviços e notificações usando o token anterior e também tenta criar um serviço. Todas as operações devem retornar HTTP 401. O login com senha antiga permanece bloqueado; somente a nova senha permite abrir uma nova sessão.
