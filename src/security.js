@@ -32,6 +32,6 @@ export function verifyToken(token, secret) {
   try {
     const meta = JSON.parse(Buffer.from(header, 'base64url').toString());
     const claims = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    return meta.alg === 'HS256' && meta.typ === 'JWT' && claims.iss === 'facilita-rebuild' && claims.aud === 'facilita-web' && Number.isInteger(claims.iat) && claims.iat <= Math.floor(Date.now() / 1000) && Number.isInteger(claims.exp) && claims.exp > Math.floor(Date.now() / 1000) && typeof claims.sub === 'string' && claims.sub.length > 0 ? claims : null;
+    return meta.alg === 'HS256' && meta.typ === 'JWT' && claims.iss === 'facilita-rebuild' && claims.aud === 'facilita-web' && Number.isInteger(claims.iat) && claims.iat <= Math.floor(Date.now() / 1000) && Number.isInteger(claims.exp) && claims.exp > claims.iat && claims.exp > Math.floor(Date.now() / 1000) && typeof claims.sub === 'string' && claims.sub.length > 0 ? claims : null;
   } catch { return null; }
 }
