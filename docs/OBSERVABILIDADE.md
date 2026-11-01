@@ -19,3 +19,6 @@ Respostas HTTP 500 usam o formato `{ "error": "INTERNAL_ERROR", "requestId": "<u
 
 ## Erros de entrada
 Corpos JSON inválidos retornam HTTP `400` com `error: INVALID_JSON`, e corpos maiores que o limite configurado de 100 KB retornam HTTP `413` com `error: PAYLOAD_TOO_LARGE`. Ambas as respostas incluem `requestId`, correspondente ao cabeçalho `X-Request-ID`, sem reproduzir os dados recebidos. Erros inesperados continuam sendo retornados como HTTP `500` e `INTERNAL_ERROR`.
+
+## Liveness e readiness
+O endpoint `/v1/facilita/live` não depende do MySQL e responde mesmo quando o banco está indisponível. Já `/v1/facilita/health` testa a conexão com o banco e devolve erro 500 com `requestId`, sem revelar detalhes internos da configuração. Um teste unitário confirma esses comportamentos e verifica que a liveness continua funcional após a falha de readiness.
