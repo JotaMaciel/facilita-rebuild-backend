@@ -25,3 +25,6 @@ O endpoint `/v1/facilita/live` não depende do MySQL e responde mesmo quando o b
 
 ## Recuperação da disponibilidade
 O teste unitário também simula o retorno da conexão ao MySQL na mesma instância da API. Primeiro `/health` retorna 500 durante a falha; após restabelecer a conexão simulada, responde 200 com `{ "status": "ok", "database": "connected" }`, sem reiniciar o servidor. Cada requisição recebe um `X-Request-ID` diferente.
+
+## Falhas repetidas
+Um teste simula três falhas consecutivas do MySQL. Cada chamada a `/health` deve responder 500 com um `requestId` próprio, enquanto `/live` continua disponível e não consulta o banco. Depois da recuperação, `/health` deve responder 200 na mesma instância, demonstrando que falhas sucessivas não impedem a recuperação.
