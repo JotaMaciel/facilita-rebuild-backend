@@ -142,3 +142,31 @@ test('falhas repetidas de readiness não impedem recuperação posterior', async
     await new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()));
   }
 });
+
+
+test('logs de erro não expõem mensagens internas nem credenciais', async () => {
+  const originalError = console.error;
+  const entries = [];
+  console.error = (...args) => { entries.push(args); };
+  const app = createApp({
+    jwtSecret: 'chave-apenas-para-testes-unitarios-com-32-caracteres',
+    db: { $queryRaw: async () => { throw new Error('DATABASE_PASSWORD=senha-super-secreta'); } },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  try {
+    await new Promise(resolve => server.once('listening', resolve));
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/v1/facilita/health`);
+    assert.equal(response.status, 500);
+    const body = await response.json();
+    assert.equal(entries.length, 1);
+    const serialized = JSON.stringify(entries);
+    assert.equal(serialized.includes('senha-super-secreta'), false);
+    assert.equal(serialized.includes('DATABASE_PASSWORD'), false);
+    assert.equal(entries[0][1].requestId, body.requestId);
+    assert.equal(entries[0][1].error, 'INTERNAL_ERROR');
+    assert.equal(entries[0][1].method, 'GET');
+  } finally {
+    console.error = originalError;
+    await new Promise((resolve,reject) => server.close(err=>err?reject(err):resolve()));
+  }
+});
