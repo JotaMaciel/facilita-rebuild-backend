@@ -31,3 +31,6 @@ Um teste simula três falhas consecutivas do MySQL. Cada chamada a `/health` dev
 
 ## Logs sem informações sensíveis
 Erros inesperados agora registram somente `requestId`, método HTTP, padrão da rota Express (quando disponível) e código fixo `INTERNAL_ERROR`. A mensagem bruta da exceção e o caminho completo requisitado não são registrados, evitando que URLs com parâmetros ou mensagens do banco divulguem dados sensíveis. A resposta pública permanece HTTP 500 com `requestId`.
+
+## Teste de confidencialidade dos logs
+Um teste unitário intercepta `console.error`, simula falha de conexão cuja mensagem contém uma credencial fictícia e verifica que nem a mensagem nem o nome da variável sensível aparecem no log. O registro deve manter o mesmo `requestId` retornado ao cliente, o método HTTP e o código genérico `INTERNAL_ERROR`.
