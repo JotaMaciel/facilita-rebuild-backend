@@ -26,3 +26,6 @@ O teste de integração com MySQL confirma que um terceiro usuário autenticado 
 
 ## Rejeição de credenciais inválidas
 Os testes unitários exercitam as rotas privadas `/auth/me`, `/auth/sessoes`, `/servicos` e `/notificacoes` com cabeçalho `Authorization` ausente, incompleto, com esquema diferente de Bearer e tokens malformados. Todas devem devolver HTTP 401 com `UNAUTHORIZED` e identificador `X-Request-ID`, sem permitir acesso aos dados.
+
+## Validação de entradas
+Os testes HTTP também verificam que o cadastro recusa e-mail, senha, nome ou papel inválidos, e que a criação de serviços recusa categorias e descrições fora dos limites definidos. As respostas utilizam HTTP 400 e `VALIDATION_ERROR`, com detalhes dos campos inválidos. A validação é feita no BackEnd antes de persistir os dados.
