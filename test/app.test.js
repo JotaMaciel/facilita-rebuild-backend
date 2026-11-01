@@ -132,3 +132,20 @@ test('limitador de autenticação retorna 429 após excesso de tentativas', asyn
     await new Promise((resolve,reject)=>isolated.close(err=>err?reject(err):resolve()));
   }
 });
+
+test('JWT adulterado é rejeitado mesmo com estrutura válida', async () => {
+  const login = await post('/auth/login', { email:'joao@example.com', senha:'senhaForte123' });
+  assert.equal(login.status,200);
+  const { token } = await login.json();
+  const [header, payload, signature] = token.split('.');
+  const claims = JSON.parse(Buffer.from(payload,'base64url').toString());
+  const alteredPayload = Buffer.from(JSON.stringify({...claims,role:'ADMIN'})).toString('base64url');
+  for (const forged of [
+    [header,alteredPayload,signature].join('.'),
+    [header,payload,signature.slice(0,-1)+(signature.at(-1)==='A'?'B':'A')].join('.'),
+  ]) {
+    const response = await fetch(url+'/auth/me',{headers:{Authorization:'Bearer '+forged}});
+    assert.equal(response.status,401);
+    assert.equal((await response.json()).error,'UNAUTHORIZED');
+  }
+});
