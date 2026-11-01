@@ -169,7 +169,7 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     const customerCannotFinish = await fetch(base + `/servicos/${secondId}/concluir`, {
       method:'PATCH',headers:{Authorization:`Bearer ${token}`}
     });
-    assert.equal(customerCannotFinish.status,409);
+    assert.equal(customerCannotFinish.status,403);
     const afterDeniedFinish = await prisma.servico.findUnique({where:{id:secondId}});
     assert.equal(afterDeniedFinish.status,'EM_ANDAMENTO');
     assert.equal(afterDeniedFinish.prestadorId,providerId);
