@@ -28,3 +28,6 @@ O teste unitário também simula o retorno da conexão ao MySQL na mesma instân
 
 ## Falhas repetidas
 Um teste simula três falhas consecutivas do MySQL. Cada chamada a `/health` deve responder 500 com um `requestId` próprio, enquanto `/live` continua disponível e não consulta o banco. Depois da recuperação, `/health` deve responder 200 na mesma instância, demonstrando que falhas sucessivas não impedem a recuperação.
+
+## Logs sem informações sensíveis
+Erros inesperados agora registram somente `requestId`, método HTTP, padrão da rota Express (quando disponível) e código fixo `INTERNAL_ERROR`. A mensagem bruta da exceção e o caminho completo requisitado não são registrados, evitando que URLs com parâmetros ou mensagens do banco divulguem dados sensíveis. A resposta pública permanece HTTP 500 com `requestId`.
