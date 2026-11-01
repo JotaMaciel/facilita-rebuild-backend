@@ -116,6 +116,7 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
       const accepted = await prisma.servico.findUnique({where:{id:secondId}});
       assert.equal(accepted.status,'ACEITO');
       assert.ok([providerId,competingId].includes(accepted.prestadorId));
+      const noticesBeforeRetry = await prisma.notificacao.count({where:{usuarioId:userId,titulo:'Serviço aceito'}});
       const losingToken = accepted.prestadorId === providerId ? competingToken : providerToken;
       const losingAttempt = await fetch(base + `/servicos/${secondId}/aceitar`,{
         method:'PATCH',headers:{Authorization:'Bearer '+losingToken}
@@ -124,6 +125,7 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
       const afterLosingAttempt = await prisma.servico.findUnique({where:{id:secondId}});
       assert.equal(afterLosingAttempt.prestadorId,accepted.prestadorId);
       assert.equal(afterLosingAttempt.status,'ACEITO');
+      assert.equal(await prisma.notificacao.count({where:{usuarioId:userId,titulo:'Serviço aceito'}}),noticesBeforeRetry,'tentativa rejeitada não deve gerar notificação adicional');
       const notices = await prisma.notificacao.count({where:{usuarioId:userId,titulo:'Serviço aceito'}});
       assert.equal(notices,1,'aceite concorrente gera uma única notificação');
       // Reinicia apenas o cenário de integração após verificar a disputa concorrente.
