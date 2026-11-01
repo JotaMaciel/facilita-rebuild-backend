@@ -47,3 +47,6 @@ Esta branch inclui API Express 5, modelos Prisma/MySQL, registro e login JWT, se
 Instruções de instalação e limitações: [Execução local](docs/EXECUCAO_LOCAL.md).
 
 Requisitos para validar: Node.js >=22, npm e Docker Compose. Os testes e a integração com MySQL ainda não foram executados nesta entrega.
+
+### Paginação de serviços
+`GET /v1/facilita/servicos?page=1` retorna os serviços do usuário autenticado, com até 20 itens por página e os campos `data`, `page`, `pageSize` (20) e `hasNextPage` (booleano). O campo `hasNextPage` é calculado consultando um item adicional, sem exigir contagem total. O FrontEnd pode apresentar **Carregar mais** enquanto `hasNextPage` for `true`.
