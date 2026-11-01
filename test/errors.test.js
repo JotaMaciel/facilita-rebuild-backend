@@ -21,3 +21,31 @@ test('erro interno retorna requestId sem detalhes do banco', async () => {
     await new Promise((resolve, reject) => server.close(err => err ? reject(err) : resolve()));
   }
 });
+
+
+test('JSON inválido e payload excessivo recebem erros específicos sem revelar entrada', async () => {
+  const app = createApp({
+    jwtSecret: 'chave-apenas-para-testes-unitarios-com-32-caracteres',
+    db: { $queryRaw: async () => [{ one: 1 }] },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  try {
+    await new Promise(resolve => server.once('listening', resolve));
+    const url = `http://127.0.0.1:${server.address().port}/v1/facilita/auth/login`;
+    for (const scenario of [
+      { body: '{"senha":"secreto",', status: 400, error: 'INVALID_JSON' },
+      { body: JSON.stringify({ value: 'x'.repeat(110000) }), status: 413, error: 'PAYLOAD_TOO_LARGE' },
+    ]) {
+      const response = await fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: scenario.body,
+      });
+      assert.equal(response.status, scenario.status);
+      const payload = await response.json();
+      assert.equal(payload.error, scenario.error);
+      assert.equal(payload.requestId, response.headers.get('x-request-id'));
+      assert.equal(JSON.stringify(payload).includes('secreto'), false);
+    }
+  } finally {
+    await new Promise((resolve, reject) => server.close(err => err ? reject(err) : resolve()));
+  }
+});
