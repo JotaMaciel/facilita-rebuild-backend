@@ -107,6 +107,9 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
       assert.equal(sessions.status,200);
       const otherSessionId = (await sessions.json()).data.find(s=>s.atual)?.id;
       assert.ok(otherSessionId);
+      const outsiderSessions = await fetch(base + '/auth/sessoes',{headers:{Authorization:'Bearer '+outsiderToken}});
+      assert.equal(outsiderSessions.status,200);
+      assert.equal((await outsiderSessions.json()).data.some(s=>s.id===otherSessionId),false);
       const attempt = await fetch(base + '/auth/sessoes/' + otherSessionId, {method:'DELETE',headers:{Authorization:'Bearer '+outsiderToken}});
       assert.equal(attempt.status,404);
       assert.equal((await fetch(base + '/auth/me',{headers:providerHeaders})).status,200);
