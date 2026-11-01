@@ -111,3 +111,24 @@ test('serviço rejeita descrição e categoria inválidas', async () => {
   }
   assert.equal(data.length,totalAntes,'entradas inválidas não podem criar serviços');
 });
+
+test('limitador de autenticação retorna 429 após excesso de tentativas', async () => {
+  const app = createApp({
+    db, jwtSecret: secret, authRateLimit: 2,
+  });
+  const isolated = app.listen(0, '127.0.0.1');
+  try {
+    await new Promise(resolve => isolated.once('listening', resolve));
+    const endpoint = `http://127.0.0.1:${isolated.address().port}/v1/facilita/auth/login`;
+    const body = JSON.stringify({email:'inexistente@example.test',senha:'SenhaInvalida123!'});
+    const send = () => fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body});
+    assert.equal((await send()).status,401);
+    assert.equal((await send()).status,401);
+    const blocked = await send();
+    assert.equal(blocked.status,429);
+    assert.ok(blocked.headers.get('retry-after'));
+    assert.ok(blocked.headers.get('x-request-id'));
+  } finally {
+    await new Promise((resolve,reject)=>isolated.close(err=>err?reject(err):resolve()));
+  }
+});
