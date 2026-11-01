@@ -96,6 +96,10 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     const available = await fetch(base + '/servicos/disponiveis', { headers: providerHeaders });
     assert.equal(available.status, 200);
     assert.equal((await available.json()).data.some(item=>item.id===secondId),true);
+    const prematureCompletion = await fetch(base + `/servicos/${secondId}/concluir`, {method:'PATCH',headers:providerHeaders});
+    assert.equal(prematureCompletion.status,409);
+    const stillPending = await prisma.servico.findUnique({where:{id:secondId}});
+    assert.equal(stillPending.status,'PENDENTE');
     for (const [action, expected] of [['aceitar','ACEITO'],['iniciar','EM_ANDAMENTO']]) {
       const response = await fetch(base + `/servicos/${secondId}/${action}`, { method:'PATCH', headers:providerHeaders });
       assert.equal(response.status, 200);
@@ -162,6 +166,9 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     assert.ok(notice);
     const marked = await fetch(base+`/notificacoes/${notice.id}/lida`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`}});
     assert.equal(marked.status,200);
+    const duplicateStart = await fetch(base + `/servicos/${secondId}/iniciar`,{method:'PATCH',headers:providerHeaders});
+    assert.equal(duplicateStart.status,409);
+    assert.equal((await prisma.servico.findUnique({where:{id:secondId}})).status,'EM_ANDAMENTO');
     const completion = await fetch(base + `/servicos/${secondId}/concluir`, {method:'PATCH',headers:providerHeaders});
     assert.equal(completion.status,200);
     assert.equal((await completion.json()).data.status,'CONCLUIDO');
