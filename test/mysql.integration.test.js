@@ -103,6 +103,13 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     try {
       const outsiderLogin = await fetch(base + '/auth/login', { method:'POST', headers, body:JSON.stringify({email:unknownMail,senha:'SenhaSegura123!'})});
       const outsiderToken = (await outsiderLogin.json()).token;
+      const sessions = await fetch(base + '/auth/sessoes', {headers:providerHeaders});
+      assert.equal(sessions.status,200);
+      const otherSessionId = (await sessions.json()).data.find(s=>s.atual)?.id;
+      assert.ok(otherSessionId);
+      const attempt = await fetch(base + '/auth/sessoes/' + otherSessionId, {method:'DELETE',headers:{Authorization:'Bearer '+outsiderToken}});
+      assert.equal(attempt.status,404);
+      assert.equal((await fetch(base + '/auth/me',{headers:providerHeaders})).status,200);
       const blocked = await fetch(base + `/servicos/${secondId}/mensagens`, { headers:{Authorization:`Bearer ${outsiderToken}`} });
       assert.equal(blocked.status,404);
       const clientNotifications = await prisma.notificacao.findFirst({where:{usuarioId:userId,titulo:'Serviço aceito'}});
