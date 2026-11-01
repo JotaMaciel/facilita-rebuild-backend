@@ -62,3 +62,6 @@ O teste unitário cria tokens assinados com HMAC-SHA256, porém declara no cabe�
 
 ## Consistência temporal do JWT
 O verificador exige que `exp` seja posterior a `iat`, além de não ter vencido e de não ter sido emitido no futuro. Testes com tokens assinados contendo `exp` igual ou anterior a `iat` garantem rejeição mesmo quando a assinatura é válida.
+
+## Tipos dos campos JWT
+Os testes cobrem tokens corretamente assinados, mas com campos inválidos: `sub` numérico ou nulo, `iat` e `exp` em formato de texto, `iss` nulo e `aud` como lista. A validação deve rejeitá-los sem autenticar o usuário.
