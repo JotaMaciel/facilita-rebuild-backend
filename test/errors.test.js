@@ -49,3 +49,32 @@ test('JSON inválido e payload excessivo recebem erros específicos sem revelar 
     await new Promise((resolve, reject) => server.close(err => err ? reject(err) : resolve()));
   }
 });
+
+
+test('health falha de maneira segura e live permanece disponível durante indisponibilidade do banco', async () => {
+  let calls = 0;
+  const app = createApp({
+    jwtSecret: 'chave-apenas-para-testes-unitarios-com-32-caracteres',
+    db: { $queryRaw: async () => { calls++; throw new Error('DATABASE_URL=segredo-nao-divulgar'); } },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  try {
+    await new Promise(resolve => server.once('listening', resolve));
+    const base = `http://127.0.0.1:${server.address().port}/v1/facilita`;
+    const live = await fetch(base+'/live');
+    assert.equal(live.status,200);
+    assert.deepEqual(await live.json(),{status:'alive'});
+    assert.equal(calls,0,'liveness não deve consultar banco');
+    const health = await fetch(base+'/health');
+    assert.equal(health.status,500);
+    const body = await health.json();
+    assert.equal(body.error,'INTERNAL_ERROR');
+    assert.equal(body.requestId,health.headers.get('x-request-id'));
+    assert.equal(JSON.stringify(body).includes('segredo-nao-divulgar'),false);
+    assert.equal(calls,1);
+    const liveAfter = await fetch(base+'/live');
+    assert.equal(liveAfter.status,200);
+  } finally {
+    await new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()));
+  }
+});
