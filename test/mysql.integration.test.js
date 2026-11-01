@@ -179,6 +179,11 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     const completion = await fetch(base + `/servicos/${secondId}/concluir`, {method:'PATCH',headers:providerHeaders});
     assert.equal(completion.status,200);
     assert.equal((await completion.json()).data.status,'CONCLUIDO');
+    const cannotCancelFinished = await fetch(base + `/servicos/${secondId}/cancelar`, {
+      method:'PATCH',headers:{Authorization:`Bearer ${token}`}
+    });
+    assert.equal(cannotCancelFinished.status,409);
+    assert.equal((await prisma.servico.findUnique({where:{id:secondId}})).prestadorId,providerId);
     const repeatedCompletion = await fetch(base + `/servicos/${secondId}/concluir`,{method:'PATCH',headers:providerHeaders});
     assert.equal(repeatedCompletion.status,409);
     assert.equal((await prisma.servico.findUnique({where:{id:secondId}})).status,'CONCLUIDO');
