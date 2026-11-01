@@ -34,3 +34,6 @@ Erros inesperados agora registram somente `requestId`, método HTTP, padrão da 
 
 ## Teste de confidencialidade dos logs
 Um teste unitário intercepta `console.error`, simula falha de conexão cuja mensagem contém uma credencial fictícia e verifica que nem a mensagem nem o nome da variável sensível aparecem no log. O registro deve manter o mesmo `requestId` retornado ao cliente, o método HTTP e o código genérico `INTERNAL_ERROR`.
+
+## Erros de entrada e privacidade
+Há cobertura automatizada para JSON malformado (`400 INVALID_JSON`) e corpos de requisição acima do limite (`413 PAYLOAD_TOO_LARGE`). O teste envia um segredo fictício no corpo da requisição e confirma que ele não aparece na resposta ou nos logs. Esses erros esperados de entrada não devem gerar registros de erro interno.
