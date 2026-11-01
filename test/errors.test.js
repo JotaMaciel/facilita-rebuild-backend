@@ -78,3 +78,29 @@ test('health falha de maneira segura e live permanece disponível durante indisp
     await new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()));
   }
 });
+
+
+test('readiness se recupera quando o banco volta sem reiniciar a API', async () => {
+  let available = false;
+  const app = createApp({
+    jwtSecret: 'chave-apenas-para-testes-unitarios-com-32-caracteres',
+    db: { $queryRaw: async () => {
+      if (!available) throw new Error('database offline');
+      return [{ one: 1 }];
+    } },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  try {
+    await new Promise(resolve => server.once('listening',resolve));
+    const url = `http://127.0.0.1:${server.address().port}/v1/facilita/health`;
+    const failed = await fetch(url);
+    assert.equal(failed.status,500);
+    available = true;
+    const recovered = await fetch(url);
+    assert.equal(recovered.status,200);
+    assert.deepEqual(await recovered.json(),{status:'ok',database:'connected'});
+    assert.notEqual(failed.headers.get('x-request-id'),recovered.headers.get('x-request-id'));
+  } finally {
+    await new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()));
+  }
+});
