@@ -47,3 +47,6 @@ O teste de integração cria dois prestadores distintos que tentam aceitar o mes
 O cenário de concorrência também repete a tentativa de aceite usando a conta do prestador que perdeu a disputa. O BackEnd deve retornar novamente `409` e preservar tanto o status `ACEITO` quanto o `prestadorId` registrado no MySQL.
 
 A tentativa adicional do prestador perdedor também é acompanhada de uma contagem de notificações antes e depois do conflito. A quantidade deve permanecer inalterada, evitando notificações redundantes após `409`.
+
+## Assinatura de JWT
+Um teste cria um JWT legítimo, modifica o papel declarado no payload sem atualizar a assinatura e, em outra tentativa, modifica a assinatura. A API deve rejeitar ambos com `401 UNAUTHORIZED`, impedindo adulteração de permissões.
