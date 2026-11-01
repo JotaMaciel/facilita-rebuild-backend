@@ -255,6 +255,16 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
   assert.equal(reuse.status,400);
   const revokedAfterReset = await fetch(base + '/auth/me', {headers:{Authorization:`Bearer ${token}`}});
   assert.equal(revokedAfterReset.status,401);
+  for (const path of ['/auth/sessoes','/servicos','/notificacoes']) {
+    const stale = await fetch(base + path, {headers:{Authorization:'Bearer '+token}});
+    assert.equal(stale.status,401,'reset precisa revogar acesso a '+path);
+    assert.equal((await stale.json()).error,'SESSION_EXPIRED');
+  }
+  const staleWrite = await fetch(base + '/servicos',{
+    method:'POST',headers:{...headers,Authorization:'Bearer '+token},
+    body:JSON.stringify({descricao:'Operação com token revogado',categoria:'Compras'})
+  });
+  assert.equal(staleWrite.status,401);
   const oldLogin = await fetch(base + '/auth/login', {method:'POST',headers,body:JSON.stringify({email,senha:'SenhaSegura123!'})});
   assert.equal(oldLogin.status,401);
   const freshLogin = await fetch(base + '/auth/login', {method:'POST',headers,body:JSON.stringify({email,senha:'SenhaNova456!'})});
