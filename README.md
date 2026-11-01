@@ -4,7 +4,7 @@
 
 Este repositório foi criado para a reconstrução e evolução técnica do BackEnd do Facilita, com foco em boas práticas de engenharia de software e portfólio profissional.
 
-> **Estado atual:** preparação da migração. O código original ainda não foi importado para este repositório; portanto, a API ainda não pode ser executada aqui.
+> **Estado atual:** API Rebuild executável em Node.js 22 com Express 5, Prisma e MySQL. Implementação independente, ainda sem paridade completa com o sistema original e sem publicação em produção.
 
 ## Objetivos técnicos
 - API REST com Node.js e TypeScript, separação de responsabilidades e validação de dados.
@@ -38,7 +38,7 @@ Esses itens serão revisados antes de considerar o sistema pronto para produçã
 Não registre chaves PagBank, tokens JWT, senhas, URLs com credenciais ou dados pessoais. Integrações financeiras serão validadas apenas em ambiente de testes.
 
 ## Estado de validação
-Ainda não foram executados build, migrações de banco, testes ou chamadas de API nesta nova versão.
+O GitHub Actions executa testes unitários, testes de integração com MySQL 8.4, migrações Prisma e build/smoke test do contêiner. Consulte os resultados do commit mais recente na aba Actions.
 
 ## Implementação desta branch
 
@@ -46,7 +46,7 @@ Esta branch inclui API Express 5, modelos Prisma/MySQL, registro e login JWT, se
 
 Instruções de instalação e limitações: [Execução local](docs/EXECUCAO_LOCAL.md).
 
-Requisitos para validar: Node.js >=22, npm e Docker Compose. Os testes e a integração com MySQL ainda não foram executados nesta entrega.
+Requisitos para validar: Node.js >=22, npm e Docker Compose. Testes unitários e de integração com MySQL são executados pelo GitHub Actions; para reproduzir localmente, siga o guia de execução.
 
 ### Paginação de serviços
 `GET /v1/facilita/servicos?page=1` retorna os serviços do usuário autenticado, com até 20 itens por página e os campos `data`, `page`, `pageSize` (20) e `hasNextPage` (booleano). O campo `hasNextPage` é calculado consultando um item adicional, sem exigir contagem total. O FrontEnd pode apresentar **Carregar mais** enquanto `hasNextPage` for `true`.
