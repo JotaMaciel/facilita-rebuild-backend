@@ -1,4 +1,5 @@
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
@@ -25,6 +26,11 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
   if (!jwtSecret || jwtSecret.length < 32) throw new Error('JWT_SECRET deve ter ao menos 32 caracteres');
   const app = express();
   app.disable('x-powered-by');
+  app.use((req, res, next) => {
+    req.requestId = randomUUID();
+    res.setHeader('X-Request-ID', req.requestId);
+    next();
+  });
   app.use(helmet());
   app.use(cors({ origin: (process.env.FRONTEND_URL || 'http://localhost:5173').split(',').map(x=>x.trim()) }));
   app.use(express.json({ limit: '100kb' }));
@@ -293,7 +299,7 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
   });
   app.use((_req, res) => res.status(404).json({ error: 'NOT_FOUND' }));
   app.use((err, _req, res, _next) => {
-    console.error('API error', err);
+    console.error('API error', { requestId: _req.requestId, method: _req.method, path: _req.path, message: err.message });
     res.status(500).json({ error: 'INTERNAL_ERROR' });
   });
   return app;
