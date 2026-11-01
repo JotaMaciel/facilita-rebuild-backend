@@ -96,6 +96,40 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     const available = await fetch(base + '/servicos/disponiveis', { headers: providerHeaders });
     assert.equal(available.status, 200);
     assert.equal((await available.json()).data.some(item=>item.id===secondId),true);
+    const competingEmail = `competidor-${crypto.randomUUID()}@example.test`;
+    const competingRegister = await fetch(base + '/auth/registro', {
+      method:'POST',headers,body:JSON.stringify({nome:'Outro Prestador',email:competingEmail,senha:'SenhaSegura123!',papel:'PRESTADOR'})
+    });
+    assert.equal(competingRegister.status,201);
+    const competingId = (await competingRegister.json()).data.id;
+    try {
+      const competingLogin = await fetch(base + '/auth/login',{
+        method:'POST',headers,body:JSON.stringify({email:competingEmail,senha:'SenhaSegura123!'})
+      });
+      assert.equal(competingLogin.status,200);
+      const competingToken = (await competingLogin.json()).token;
+      const attempts = await Promise.all([
+        fetch(base + `/servicos/${secondId}/aceitar`,{method:'PATCH',headers:providerHeaders}),
+        fetch(base + `/servicos/${secondId}/aceitar`,{method:'PATCH',headers:{Authorization:'Bearer '+competingToken}})
+      ]);
+      assert.deepEqual(attempts.map(x=>x.status).sort(),[200,409]);
+      const accepted = await prisma.servico.findUnique({where:{id:secondId}});
+      assert.equal(accepted.status,'ACEITO');
+      assert.ok([providerId,competingId].includes(accepted.prestadorId));
+      const notices = await prisma.notificacao.count({where:{usuarioId:userId,titulo:'Serviço aceito'}});
+      assert.equal(notices,1,'aceite concorrente gera uma única notificação');
+      if (accepted.prestadorId !== providerId) {
+        // O fluxo de teste seguinte continua com o prestador principal.
+        await prisma.servico.update({where:{id:secondId},data:{status:'PENDENTE',prestadorId:null}});
+        await prisma.notificacao.deleteMany({where:{usuarioId:userId,titulo:'Serviço aceito'}});
+      } else {
+        await prisma.servico.update({where:{id:secondId},data:{status:'PENDENTE',prestadorId:null}});
+        await prisma.notificacao.deleteMany({where:{usuarioId:userId,titulo:'Serviço aceito'}});
+      }
+    } finally {
+      await prisma.sessao.deleteMany({where:{usuarioId:competingId}});
+      await prisma.usuario.deleteMany({where:{id:competingId}});
+    }
     const prematureCompletion = await fetch(base + `/servicos/${secondId}/concluir`, {method:'PATCH',headers:providerHeaders});
     assert.equal(prematureCompletion.status,409);
     const stillPending = await prisma.servico.findUnique({where:{id:secondId}});
