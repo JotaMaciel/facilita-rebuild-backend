@@ -29,3 +29,5 @@ Os testes unitários exercitam as rotas privadas `/auth/me`, `/auth/sessoes`, `/
 
 ## Validação de entradas
 Os testes HTTP também verificam que o cadastro recusa e-mail, senha, nome ou papel inválidos, e que a criação de serviços recusa categorias e descrições fora dos limites definidos. As respostas utilizam HTTP 400 e `VALIDATION_ERROR`, com detalhes dos campos inválidos. A validação é feita no BackEnd antes de persistir os dados.
+
+Os testes também verificam que requisições de criação de serviços rejeitadas por validação não alteram a quantidade de serviços no repositório simulado. Assim, não basta retornar `400`: a operação deve ser livre de efeitos colaterais de criação.
