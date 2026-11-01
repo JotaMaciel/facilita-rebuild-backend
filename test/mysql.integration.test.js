@@ -105,6 +105,14 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
       const outsiderToken = (await outsiderLogin.json()).token;
       const blocked = await fetch(base + `/servicos/${secondId}/mensagens`, { headers:{Authorization:`Bearer ${outsiderToken}`} });
       assert.equal(blocked.status,404);
+      const clientNotifications = await prisma.notificacao.findFirst({where:{usuarioId:userId,titulo:'Serviço aceito'}});
+      assert.ok(clientNotifications);
+      const deniedNotification = await fetch(base + `/notificacoes/${clientNotifications.id}/lida`,{
+        method:'PATCH',headers:{Authorization:`Bearer ${outsiderToken}`}
+      });
+      assert.equal(deniedNotification.status,404);
+      const notificationUnchanged = await prisma.notificacao.findUnique({where:{id:clientNotifications.id}});
+      assert.equal(notificationUnchanged.lida,false);
       const deniedPost = await fetch(base + `/servicos/${secondId}/mensagens`, {
         method:'POST', headers:{...headers,Authorization:`Bearer ${outsiderToken}`},
         body:JSON.stringify({texto:'Tentativa de acesso não autorizado'})
