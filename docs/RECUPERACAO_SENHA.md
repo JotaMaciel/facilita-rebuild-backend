@@ -26,3 +26,6 @@ O teste de integração cria um token de recuperação já vencido. A tentativa 
 
 ## Reutilização do token
 Além de rejeitar a segunda tentativa com HTTP 400, o teste MySQL agora verifica que a senha definida no primeiro uso permanece válida e que a senha enviada na tentativa de reutilização não é aceita no login.
+
+## Limite de autenticação nos testes
+O teste de integração configura `authRateLimit: 100` ao construir a aplicação, pois o cenário realiza várias autenticações em sequência no mesmo IP de teste. A aplicação em uso normal mantém o limite padrão de 20 tentativas por 15 minutos. Isso preserva o teste de recuperação de senha sem enfraquecer o limite padrão de segurança.
