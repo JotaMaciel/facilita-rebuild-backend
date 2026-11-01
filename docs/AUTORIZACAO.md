@@ -20,3 +20,6 @@ Estas verificações são automáticas e não substituem testes de penetração.
 
 ## Testes negativos de acesso cruzado
 O teste HTTP com MySQL utiliza um terceiro usuário autenticado que não participa do serviço. Confirma que ele não consegue ler ou enviar mensagens da conversa, cancelar a solicitação, avaliá-la ou marcar como lida uma notificação do cliente. Também verifica que a notificação permanece não lida após a tentativa. As operações de cancelamento e avaliação usam HTTP 409 quando não são elegíveis; mensagens e notificações retornam 403/404 conforme a rota. Esses testes complementam, mas não substituem, a revisão de autorização da API.
+
+## Isolamento de sessões entre usuários
+O teste de integração com MySQL confirma que um terceiro usuário autenticado não vê a sessão do prestador em `GET /auth/sessoes` nem consegue revogá-la com `DELETE /auth/sessoes/:id` (HTTP 404). Depois da tentativa, o prestador continua autenticado. O controle é realizado pelo BackEnd, usando o identificador do usuário validado na sessão.
