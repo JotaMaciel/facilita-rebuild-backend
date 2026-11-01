@@ -244,6 +244,22 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
     await prisma.usuario.deleteMany({ where: { id: providerId } });
   }
   // Recuperação real no MySQL: token válido apenas uma vez e revogação das sessões.
+  const expiredToken = crypto.randomBytes(32).toString('base64url');
+  await prisma.recuperacaoSenha.create({data:{
+    usuarioId:userId,
+    tokenHash:crypto.createHash('sha256').update(expiredToken).digest('hex'),
+    expiraEm:new Date(Date.now()-60000)
+  }});
+  const expiredReset = await fetch(base+'/auth/redefinir-senha',{
+    method:'POST',headers,body:JSON.stringify({token:expiredToken,senha:'SenhaIndevida999!'})
+  });
+  assert.equal(expiredReset.status,400);
+  assert.equal((await fetch(base+'/auth/me',{headers:{Authorization:'Bearer '+token}})).status,200,
+    'token de recuperação expirado não deve revogar sessão válida');
+  const originalPasswordWorks = await fetch(base+'/auth/login',{
+    method:'POST',headers,body:JSON.stringify({email,senha:'SenhaSegura123!'})
+  });
+  assert.equal(originalPasswordWorks.status,200,'token expirado não deve alterar senha');
   const resetToken = crypto.randomBytes(32).toString('base64url');
   const resetHash = crypto.createHash('sha256').update(resetToken).digest('hex');
   await prisma.recuperacaoSenha.create({ data: { usuarioId: userId, tokenHash: resetHash, expiraEm: new Date(Date.now() + 15*60000) } });
