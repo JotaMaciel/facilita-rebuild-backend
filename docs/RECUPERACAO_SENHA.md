@@ -23,3 +23,6 @@ Após redefinir a senha, o teste de integração com MySQL tenta consultar sess�
 
 ## Token expirado
 O teste de integração cria um token de recuperação já vencido. A tentativa de redefinição deve retornar HTTP 400, sem alterar a senha antiga nem revogar uma sessão ainda válida. Em seguida, o teste confirma que a autenticação com a senha original continua funcionando.
+
+## Reutilização do token
+Além de rejeitar a segunda tentativa com HTTP 400, o teste MySQL agora verifica que a senha definida no primeiro uso permanece válida e que a senha enviada na tentativa de reutilização não é aceita no login.
