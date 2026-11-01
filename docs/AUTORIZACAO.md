@@ -56,3 +56,6 @@ Os testes unitários geram tokens assinados com a chave de teste e alteram indiv
 
 ## Isolamento criptográfico entre ambientes
 O teste unitário confirma que um JWT assinado com a chave de homologação é aceito apenas por essa chave e rejeitado quando validado com a chave de outro ambiente. Produção e homologação devem usar `JWT_SECRET` distintos, gerados com entropia adequada e mantidos fora do repositório.
+
+## Cabeçalho JWT
+O teste unitário cria tokens assinados com HMAC-SHA256, porém declara no cabeçalho `alg: none`, `alg: HS512` ou um tipo (`typ`) diferente de `JWT`. Todos devem ser rejeitados, mesmo com assinatura matematicamente válida, para garantir que o verificador aceite somente o algoritmo e tipo esperados.
