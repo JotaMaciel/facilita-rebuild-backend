@@ -29,3 +29,6 @@ Além de rejeitar a segunda tentativa com HTTP 400, o teste MySQL agora verifica
 
 ## Limite de autenticação nos testes
 O teste de integração configura `authRateLimit: 100` ao construir a aplicação, pois o cenário realiza várias autenticações em sequência no mesmo IP de teste. A aplicação em uso normal mantém o limite padrão de 20 tentativas por 15 minutos. Isso preserva o teste de recuperação de senha sem enfraquecer o limite padrão de segurança.
+
+## Teste explícito do limitador
+Um teste unitário inicia uma instância isolada com `authRateLimit: 2`, envia duas tentativas com credenciais inválidas e verifica que a terceira recebe HTTP 429, cabeçalho `Retry-After` e `X-Request-ID`. Esse teste demonstra que a proteção continua ativa apesar da configuração distinta usada na integração MySQL.
