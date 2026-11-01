@@ -170,3 +170,35 @@ test('logs de erro não expõem mensagens internas nem credenciais', async () =>
     await new Promise((resolve,reject) => server.close(err=>err?reject(err):resolve()));
   }
 });
+
+
+test('erros de JSON e tamanho não registram conteúdo enviado pelo cliente', async () => {
+  const originalError = console.error;
+  const entries = [];
+  console.error = (...args) => { entries.push(args); };
+  const app = createApp({
+    jwtSecret: 'chave-apenas-para-testes-unitarios-com-32-caracteres',
+    db: { $queryRaw: async () => [{ one: 1 }] },
+  });
+  const server = app.listen(0, '127.0.0.1');
+  try {
+    await new Promise(resolve => server.once('listening', resolve));
+    const url = `http://127.0.0.1:${server.address().port}/v1/facilita/auth/login`;
+    for (const scenario of [
+      { body: '{"senha":"segredo-do-cliente",', status: 400, error: 'INVALID_JSON' },
+      { body: JSON.stringify({senha:'segredo-do-cliente',dados:'x'.repeat(110000)}), status:413, error:'PAYLOAD_TOO_LARGE' },
+    ]) {
+      const response = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:scenario.body});
+      assert.equal(response.status,scenario.status);
+      const payload = await response.json();
+      assert.equal(payload.error,scenario.error);
+      assert.equal(payload.requestId,response.headers.get('x-request-id'));
+      assert.equal(JSON.stringify(payload).includes('segredo-do-cliente'),false);
+    }
+    assert.equal(JSON.stringify(entries).includes('segredo-do-cliente'),false);
+    assert.equal(entries.length,0,'erros de entrada esperados não devem produzir logs de erro interno');
+  } finally {
+    console.error = originalError;
+    await new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()));
+  }
+});
