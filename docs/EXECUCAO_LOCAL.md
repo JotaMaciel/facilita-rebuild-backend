@@ -40,11 +40,16 @@ O FrontEnd espera `http://localhost:3000/v1/facilita` por padrão.
 | GET | /v1/facilita/servicos | Bearer JWT |
 | POST | /v1/facilita/servicos | Bearer JWT |
 
-## Limitações atuais
-- API e UI foram implementadas, **não testadas ponta a ponta** nesta entrega (sem download de dependências no ambiente disponível).
-- Não há refresh token, recuperação de senha ou autorização por recurso/papel.
-- Não há contratação, pagamento real, chat, geolocalização ou integração com o projeto original.
-- A listagem retorna até 100 serviços; é necessário implementar paginação e checagem de acesso antes do uso real.
-- API é uma reimplementação inicial e ainda não tem paridade com o Facilita original.
+## Validação integrada
+O GitHub Actions executa testes unitários e integração real com MySQL. O repositório [FrontEnd Rebuild](https://github.com/JotaMaciel/facilita-rebuild-frontend) executa também um cenário de Chromium contra esta API e um MySQL de testes, incluindo autenticação, criação/cancelamento, atendimento, mensagens, avaliações, notificações e paginação.
+
+Para verificar a API localmente, execute `npm test` e, com o MySQL iniciado e as migrações aplicadas, `npm run test:integration`. O teste completo de navegador é executado no pipeline do FrontEnd; o comando `npm run dev` sozinho não valida os fluxos de ponta a ponta.
+
+## Recursos e limitações atuais
+- O MVP implementa cadastro, login, recuperação e redefinição de senha por token, gerenciamento/revogação de sessões, autorização por papel e por recurso, solicitações paginadas, aceite/início/conclusão, mensagens, notificações e avaliações.
+- A recuperação de senha depende de configuração de envio de e-mail para uso real. `DEV_PASSWORD_RESET_LOG` é apenas para testes locais e não deve ser habilitado em produção.
+- Mensagens e notificações são consultadas periodicamente pelo FrontEnd; não há canal WebSocket em tempo real.
+- Não há contratação nem pagamento real, geolocalização ou paridade completa com os sistemas de origem.
+- Os testes automatizados cobrem cenários definidos em ambiente de CI. Uma implantação em produção exige revisão de segredos, configuração de CORS, HTTPS, observabilidade, backups e testes de deploy/restart com dados persistidos.
 
 **Observação:** `db:deploy` é indicado para uma base de testes **vazia**. Em banco existente já sincronizado via `db:push`, leia `docs/MIGRACOES.md` antes de executar.
