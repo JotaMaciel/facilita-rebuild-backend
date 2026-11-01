@@ -45,3 +45,5 @@ O teste de integração também confere a quantidade de notificações antes e d
 O teste de integração cria dois prestadores distintos que tentam aceitar o mesmo serviço simultaneamente via `Promise.all`. O resultado esperado é um aceite HTTP 200 e um conflito HTTP 409. O MySQL deve persistir apenas um prestador atribuído e gerar somente uma notificação de aceite para o cliente. Ao final, o cenário de teste é restaurado para continuar o ciclo de atendimento.
 
 O cenário de concorrência também repete a tentativa de aceite usando a conta do prestador que perdeu a disputa. O BackEnd deve retornar novamente `409` e preservar tanto o status `ACEITO` quanto o `prestadorId` registrado no MySQL.
+
+A tentativa adicional do prestador perdedor também é acompanhada de uma contagem de notificações antes e depois do conflito. A quantidade deve permanecer inalterada, evitando notificações redundantes após `409`.
