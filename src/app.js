@@ -302,8 +302,7 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET, authRateLimi
     if (res.headersSent) return _next(err);
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'INVALID_JSON', requestId: _req.requestId });
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'PAYLOAD_TOO_LARGE', requestId: _req.requestId });
-    console.error('API error', { requestId: _req.requestId, method: _req.method, path: _req.path, message: err.message });
-    if (res.headersSent) return _next(err);
+    console.error('API error', { requestId: _req.requestId, method: _req.method, route: _req.route?.path ?? 'unmatched', error: 'INTERNAL_ERROR' });
     res.status(500).json({ error: 'INTERNAL_ERROR', requestId: _req.requestId });
   });
   return app;
