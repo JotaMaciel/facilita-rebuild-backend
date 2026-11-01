@@ -65,6 +65,19 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
   const created = await fetch(base + '/servicos', { method: 'POST', headers: { ...headers, Authorization: `Bearer ${token}` }, body: JSON.stringify({ descricao: 'Comprar remédios na farmácia', categoria: 'Compras' }) });
   assert.equal(created.status, 201);
   serviceId = (await created.json()).data.id;
+
+  // Simula reinicialização da API sem apagar o volume ou recriar o banco.
+  await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  await prisma.$disconnect();
+  await prisma.$connect();
+  server = createApp({ db: prisma, jwtSecret: secret, authRateLimit: 100 }).listen(0, '127.0.0.1');
+  await new Promise(resolve => server.once('listening', resolve));
+  base = `http://127.0.0.1:${server.address().port}/v1/facilita`;
+  const persisted = await fetch(base + '/servicos', { headers: { Authorization: `Bearer ${token}` } });
+  assert.equal(persisted.status, 200, 'sessão e API devem continuar válidas após reiniciar');
+  assert.ok((await persisted.json()).data.some(item => item.id === serviceId),
+    'serviço criado antes da reinicialização deve continuar persistido no MySQL');
+
   const list = await fetch(base + '/servicos', { headers: { Authorization: `Bearer ${token}` } });
   assert.equal(list.status, 200);
   assert.equal((await list.json()).data.some(s => s.id === serviceId), true);
