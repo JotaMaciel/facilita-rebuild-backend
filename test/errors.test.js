@@ -104,3 +104,41 @@ test('readiness se recupera quando o banco volta sem reiniciar a API', async () 
     await new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()));
   }
 });
+
+
+test('falhas repetidas de readiness não impedem recuperação posterior', async () => {
+  let online = false;
+  let queries = 0;
+  const app = createApp({
+    jwtSecret: 'chave-apenas-para-testes-unitarios-com-32-caracteres',
+    db: { $queryRaw: async () => {
+      queries++;
+      if (!online) throw new Error('erro interno de conexão');
+      return [{ one: 1 }];
+    } },
+  });
+  const server = app.listen(0,'127.0.0.1');
+  try {
+    await new Promise(resolve=>server.once('listening',resolve));
+    const base = `http://127.0.0.1:${server.address().port}/v1/facilita`;
+    const ids = new Set();
+    for (let i=0;i<3;i++) {
+      const failed = await fetch(base+'/health');
+      assert.equal(failed.status,500);
+      const data = await failed.json();
+      assert.equal(data.error,'INTERNAL_ERROR');
+      assert.equal(data.requestId,failed.headers.get('x-request-id'));
+      ids.add(data.requestId);
+      const alive = await fetch(base+'/live');
+      assert.equal(alive.status,200);
+    }
+    assert.equal(ids.size,3);
+    assert.equal(queries,3,'liveness não consulta MySQL');
+    online = true;
+    const restored = await fetch(base+'/health');
+    assert.equal(restored.status,200);
+    assert.equal(queries,4);
+  } finally {
+    await new Promise((resolve,reject)=>server.close(err=>err?reject(err):resolve()));
+  }
+});
