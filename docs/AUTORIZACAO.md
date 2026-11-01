@@ -53,3 +53,6 @@ Um teste cria um JWT legítimo, modifica o papel declarado no payload sem atuali
 
 ## Validação dos claims JWT
 Os testes unitários geram tokens assinados com a chave de teste e alteram individualmente campos de expiração (`exp`), emissão futura (`iat`), emissor (`iss`), público-alvo (`aud`) e identificador vazio (`sub`). Mesmo com assinatura criptográfica correta, tokens com claims inválidos devem ser rejeitados por `verifyToken`.
+
+## Isolamento criptográfico entre ambientes
+O teste unitário confirma que um JWT assinado com a chave de homologação é aceito apenas por essa chave e rejeitado quando validado com a chave de outro ambiente. Produção e homologação devem usar `JWT_SECRET` distintos, gerados com entropia adequada e mantidos fora do repositório.
