@@ -22,3 +22,6 @@ Corpos JSON inválidos retornam HTTP `400` com `error: INVALID_JSON`, e corpos m
 
 ## Liveness e readiness
 O endpoint `/v1/facilita/live` não depende do MySQL e responde mesmo quando o banco está indisponível. Já `/v1/facilita/health` testa a conexão com o banco e devolve erro 500 com `requestId`, sem revelar detalhes internos da configuração. Um teste unitário confirma esses comportamentos e verifica que a liveness continua funcional após a falha de readiness.
+
+## Recuperação da disponibilidade
+O teste unitário também simula o retorno da conexão ao MySQL na mesma instância da API. Primeiro `/health` retorna 500 durante a falha; após restabelecer a conexão simulada, responde 200 com `{ "status": "ok", "database": "connected" }`, sem reiniciar o servidor. Cada requisição recebe um `X-Request-ID` diferente.
