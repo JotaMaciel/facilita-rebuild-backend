@@ -13,3 +13,6 @@ curl -i http://localhost:3000/v1/facilita/live
 Procure o cabeçalho `X-Request-ID` na resposta. Em atendimento, encaminhe esse identificador junto com a hora aproximada do erro. Não compartilhe o cabeçalho `Authorization`, tokens de recuperação ou senhas em relatórios.
 
 Os testes automatizados verificam o formato UUID v4, a unicidade por requisição e a presença em respostas de sucesso, autenticação negada e rota inexistente.
+
+## Erros internos
+Respostas HTTP 500 usam o formato `{ "error": "INTERNAL_ERROR", "requestId": "<uuid>" }`. O `requestId` corresponde ao cabeçalho `X-Request-ID`. Detalhes de exceções e mensagens do banco permanecem apenas nos logs do servidor e não são incluídos na resposta pública. O tratamento respeita respostas que já tenham enviado cabeçalhos.
