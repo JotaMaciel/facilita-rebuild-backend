@@ -96,6 +96,7 @@ test('cadastro rejeita dados inválidos antes de gravar', async () => {
 });
 
 test('serviço rejeita descrição e categoria inválidas', async () => {
+  const totalAntes = data.length;
   const loggedIn = await post('/auth/login', {email:'joao@example.com',senha:'senhaForte123'});
   assert.equal(loggedIn.status,200);
   const { token } = await loggedIn.json();
@@ -108,4 +109,5 @@ test('serviço rejeita descrição e categoria inválidas', async () => {
     assert.equal(response.status,400);
     assert.equal((await response.json()).error,'VALIDATION_ERROR');
   }
+  assert.equal(data.length,totalAntes,'entradas inválidas não podem criar serviços');
 });
