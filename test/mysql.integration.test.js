@@ -17,7 +17,7 @@ before(async () => {
     throw new Error('Integração só pode rodar com DATABASE_URL apontando para facilita_test');
   }
   await prisma.$connect();
-  server = createApp({ db: prisma, jwtSecret: secret }).listen(0, '127.0.0.1');
+  server = createApp({ db: prisma, jwtSecret: secret, authRateLimit: 100 }).listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
   base = `http://127.0.0.1:${server.address().port}/v1/facilita`;
 });
