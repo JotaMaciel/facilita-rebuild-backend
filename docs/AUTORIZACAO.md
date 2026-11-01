@@ -33,3 +33,6 @@ Os testes HTTP também verificam que o cadastro recusa e-mail, senha, nome ou pa
 Os testes também verificam que requisições de criação de serviços rejeitadas por validação não alteram a quantidade de serviços no repositório simulado. Assim, não basta retornar `400`: a operação deve ser livre de efeitos colaterais de criação.
 
 O teste de integração com MySQL também consulta a quantidade de serviços pertencentes ao cliente antes e depois de três tentativas inválidas (descrição curta, descrição excessiva e categoria acima do limite). As respostas devem ser `400 VALIDATION_ERROR` e nenhum registro novo pode ser persistido.
+
+## Transições de estado no MySQL
+A integração HTTP com MySQL verifica que um serviço `PENDENTE` não pode ser concluído diretamente, que a transição `iniciar` não pode ser repetida após `EM_ANDAMENTO` e que `concluir` não pode ser executado novamente após `CONCLUIDO`. Cada tentativa inválida deve responder `409`, preservando o estado armazenado no banco.
