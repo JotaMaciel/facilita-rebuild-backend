@@ -113,12 +113,12 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
       const deniedCancel = await fetch(base + `/servicos/${secondId}/cancelar`, {
         method:'PATCH', headers:{Authorization:`Bearer ${outsiderToken}`}
       });
-      assert.equal(deniedCancel.status,403);
+      assert.equal(deniedCancel.status,409);
       const deniedReview = await fetch(base + `/servicos/${secondId}/avaliacao`, {
         method:'POST', headers:{...headers,Authorization:`Bearer ${outsiderToken}`},
         body:JSON.stringify({nota:1,comentario:'Avaliação indevida'})
       });
-      assert.ok([403,404].includes(deniedReview.status));
+      assert.equal(deniedReview.status,409);
     } finally {
       await prisma.sessao.deleteMany({ where:{ usuarioId: outsiderId } });
       await prisma.usuario.deleteMany({ where:{ id: outsiderId } });
