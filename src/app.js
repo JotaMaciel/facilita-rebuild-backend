@@ -161,7 +161,10 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET, authRateLimi
   app.get('/v1/facilita/servicos', auth, async (req, res, next) => {
     const page = z.coerce.number().int().min(1).max(10000).safeParse(req.query.page || 1);
     if (!page.success) return res.status(400).json({ error: 'INVALID_PAGE' });
-    try { res.json({ data: await db.servico.findMany({ where: { usuarioId: req.auth.sub }, orderBy: { criadoEm: 'desc' }, skip: (page.data - 1) * 20, take: 20 }), page: page.data }); }
+    try {
+      const rows = await db.servico.findMany({ where: { usuarioId: req.auth.sub }, orderBy: { criadoEm: 'desc' }, skip: (page.data - 1) * 20, take: 21 });
+      res.json({ data: rows.slice(0, 20), page: page.data, pageSize: 20, hasNextPage: rows.length > 20 });
+    }
     catch (e) { next(e); }
   });
   app.post('/v1/facilita/servicos', auth, async (req, res, next) => {
