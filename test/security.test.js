@@ -51,3 +51,19 @@ test('JWT de outro ambiente não é aceito mesmo com claims válidos', () => {
   assert.equal(verifyToken(token,productionSecret),null);
   assert.equal(verifyToken(token,stagingSecret)?.sub,'user-2');
 });
+
+test('JWT rejeita cabeçalhos com algoritmo ou tipo incompatíveis', () => {
+  const secret = 'uma-chave-de-testes-segura-com-mais-de-32-caracteres';
+  const valid = signToken({id:'user-3',papel:'CLIENTE'},secret);
+  const [encodedHeader,payload] = valid.split('.');
+  const original = JSON.parse(Buffer.from(encodedHeader,'base64url').toString());
+  for (const invalidHeader of [
+    {...original,alg:'none'},
+    {...original,alg:'HS512'},
+    {...original,typ:'OUTRO'},
+  ]) {
+    const header = Buffer.from(JSON.stringify(invalidHeader)).toString('base64url');
+    const signature = createHmac('sha256',secret).update(header+'.'+payload).digest('base64url');
+    assert.equal(verifyToken(header+'.'+payload+'.'+signature,secret),null);
+  }
+});
