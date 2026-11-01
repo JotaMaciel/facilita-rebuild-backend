@@ -21,7 +21,7 @@ const publicUser = ({ id, nome, email, papel }) => ({ id, nome, email, papel });
 function invalid(res, parsed) {
   return res.status(400).json({ error: 'VALIDATION_ERROR', details: parsed.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) });
 }
-export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
+export function createApp({ db, jwtSecret = process.env.JWT_SECRET, authRateLimit = 20 } = {}) {
   if (!db) throw new Error('Banco de dados obrigatório');
   if (!jwtSecret || jwtSecret.length < 32) throw new Error('JWT_SECRET deve ter ao menos 32 caracteres');
   const app = express();
@@ -39,7 +39,7 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET } = {}) {
     try { await db.$queryRaw`SELECT 1`; res.json({ status: 'ok', database: 'connected' }); }
     catch (e) { next(e); }
   });
-  const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false });
+  const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: authRateLimit, standardHeaders: 'draft-8', legacyHeaders: false });
   const auth = async (req, res, next) => {
     const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
     const claims = verifyToken(token, jwtSecret);
