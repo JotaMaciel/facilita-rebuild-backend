@@ -118,14 +118,9 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
       assert.ok([providerId,competingId].includes(accepted.prestadorId));
       const notices = await prisma.notificacao.count({where:{usuarioId:userId,titulo:'Serviço aceito'}});
       assert.equal(notices,1,'aceite concorrente gera uma única notificação');
-      if (accepted.prestadorId !== providerId) {
-        // O fluxo de teste seguinte continua com o prestador principal.
-        await prisma.servico.update({where:{id:secondId},data:{status:'PENDENTE',prestadorId:null}});
-        await prisma.notificacao.deleteMany({where:{usuarioId:userId,titulo:'Serviço aceito'}});
-      } else {
-        await prisma.servico.update({where:{id:secondId},data:{status:'PENDENTE',prestadorId:null}});
-        await prisma.notificacao.deleteMany({where:{usuarioId:userId,titulo:'Serviço aceito'}});
-      }
+      // Reinicia apenas o cenário de integração após verificar a disputa concorrente.
+      await prisma.servico.update({where:{id:secondId},data:{status:'PENDENTE',prestadorId:null}});
+      await prisma.notificacao.deleteMany({where:{usuarioId:userId,titulo:'Serviço aceito'}});
     } finally {
       await prisma.sessao.deleteMany({where:{usuarioId:competingId}});
       await prisma.usuario.deleteMany({where:{id:competingId}});
