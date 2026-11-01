@@ -269,6 +269,17 @@ test('fluxo HTTP real: registro, login, serviço, isolamento e cancelamento', as
   assert.equal(resetDone.status,200);
   const reuse = await fetch(base + '/auth/redefinir-senha', { method:'POST', headers, body:JSON.stringify({token:resetToken,senha:'SenhaOutra789!'}) });
   assert.equal(reuse.status,400);
+  const originalNewPasswordStillWorks = await fetch(base+'/auth/login',{
+    method:'POST',headers,body:JSON.stringify({email,senha:'SenhaNova456!'})
+  });
+  assert.equal(originalNewPasswordStillWorks.status,200,
+    'reutilização de token não pode sobrescrever senha atual');
+  const rejectedSecondPassword = await fetch(base+'/auth/login',{
+    method:'POST',headers,body:JSON.stringify({email,senha:'SenhaOutra789!'})
+  });
+  assert.equal(rejectedSecondPassword.status,401,
+    'senha enviada com token reutilizado não pode funcionar');
+
   const revokedAfterReset = await fetch(base + '/auth/me', {headers:{Authorization:`Bearer ${token}`}});
   assert.equal(revokedAfterReset.status,401);
   for (const path of ['/auth/sessoes','/servicos','/notificacoes']) {
