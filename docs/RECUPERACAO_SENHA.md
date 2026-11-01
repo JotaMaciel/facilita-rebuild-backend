@@ -20,3 +20,6 @@ A interface permite solicitar redefinição e informar token no ambiente de dese
 
 ## Testes de revogação após recuperação
 Após redefinir a senha, o teste de integração com MySQL tenta consultar sessões, serviços e notificações usando o token anterior e também tenta criar um serviço. Todas as operações devem retornar HTTP 401. O login com senha antiga permanece bloqueado; somente a nova senha permite abrir uma nova sessão.
+
+## Token expirado
+O teste de integração cria um token de recuperação já vencido. A tentativa de redefinição deve retornar HTTP 400, sem alterar a senha antiga nem revogar uma sessão ainda válida. Em seguida, o teste confirma que a autenticação com a senha original continua funcionando.
