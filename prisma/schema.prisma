@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+model Usuario {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  nome      String    @db.VarChar(120)
+  email     String    @unique @db.VarChar(191)
+  senhaHash String    @map("senha_hash") @db.VarChar(255)
+  papel     Papel     @default(CLIENTE)
+  criadoEm  DateTime  @default(now()) @map("criado_em")
+  servicos  Servico[] @relation("ContratanteServicos")
+  servicosAceitos Servico[] @relation("PrestadorServicos")
+  @@map("usuarios")
+}
+model Servico {
+  id         String        @id @default(uuid()) @db.VarChar(36)
+  descricao  String        @db.VarChar(500)
+  categoria  String        @db.VarChar(80)
+  status     StatusServico @default(PENDENTE)
+  usuarioId  String        @map("usuario_id") @db.VarChar(36)
+  usuario    Usuario       @relation("ContratanteServicos", fields: [usuarioId], references: [id])
+  prestadorId String? @map("prestador_id") @db.VarChar(36)
+  prestador Usuario? @relation("PrestadorServicos", fields: [prestadorId], references: [id])
+  criadoEm   DateTime      @default(now()) @map("criado_em")
+  avaliacao Avaliacao?
+  @@index([usuarioId])
+  @@index([prestadorId])
+  @@map("servicos")
+}
+enum Papel {
+  CLIENTE
+  PRESTADOR
+  ADMIN
+}
+enum StatusServico {
+  PENDENTE
+  ACEITO
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+model Avaliacao {
+  id String @id @default(uuid()) @db.VarChar(36)
+  servicoId String @unique @map("servico_id") @db.VarChar(36)
+  servico Servico @relation(fields: [servicoId], references: [id])
+  nota Int
+  comentario String? @db.VarChar(500)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  @@map("avaliacoes")
+}
+
+model Mensagem {
+  id String @id @default(uuid()) @db.VarChar(36)
+  servicoId String @map("servico_id") @db.VarChar(36)
+  autorId String @map("autor_id") @db.VarChar(36)
+  texto String @db.VarChar(2000)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  @@index([servicoId, criadoEm])
+  @@map("mensagens")
+}
+
+model Notificacao {
+  id String @id @default(uuid()) @db.VarChar(36)
+  usuarioId String @map("usuario_id") @db.VarChar(36)
+  titulo String @db.VarChar(150)
+  texto String @db.VarChar(500)
+  lida Boolean @default(false)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  @@index([usuarioId, criadoEm])
+  @@map("notificacoes")
+}
+
+model Sessao {
+  id String @id @default(uuid()) @db.VarChar(36)
+  usuarioId String @map("usuario_id") @db.VarChar(36)
+  tokenHash String @unique @map("token_hash") @db.VarChar(64)
+  expiraEm DateTime @map("expira_em")
+  revogada Boolean @default(false)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  @@index([usuarioId])
+  @@map("sessoes")
+}
+
+model RecuperacaoSenha {
+  id String @id @default(uuid()) @db.VarChar(36)
+  usuarioId String @map("usuario_id") @db.VarChar(36)
+  tokenHash String @unique @map("token_hash") @db.VarChar(64)
+  expiraEm DateTime @map("expira_em")
+  usado Boolean @default(false)
+  criadoEm DateTime @default(now()) @map("criado_em")
+  @@index([usuarioId])
+  @@map("recuperacoes_senha")
+}

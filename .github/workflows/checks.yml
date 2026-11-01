@@ -1,0 +1,63 @@
+name: BackEnd checks
+on:
+  push:
+    branches: [main, feat/persistencia-autenticacao]
+  pull_request:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test_root_password
+          MYSQL_DATABASE: facilita_test
+          MYSQL_USER: facilita
+          MYSQL_PASSWORD: test_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -ptest_root_password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      DATABASE_URL: mysql://facilita:test_password@127.0.0.1:3306/facilita_test
+      JWT_SECRET: chave-segura-exclusiva-para-testes-no-github-actions
+      FRONTEND_URL: http://localhost:5173
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run db:generate
+      - run: npm run db:deploy
+      - run: npm run db:status
+      - run: npm test
+      - run: npm run test:integration
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t facilita-rebuild-backend:ci .
+      - name: Smoke test do contêiner em execução
+        run: |
+          docker run -d --name facilita-smoke -p 127.0.0.1:3000:3000 \
+            -e NODE_ENV=production \
+            -e JWT_SECRET=segredo-de-ci-aleatorio-com-comprimento-maior-que-quarenta-e-oito-caracteres \
+            -e DATABASE_URL=mysql://teste:teste@127.0.0.1:3306/facilita_test \
+            -e FRONTEND_URL=https://app.example.test \
+            facilita-rebuild-backend:ci
+          for i in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:3000/v1/facilita/live > /tmp/facilita-live.json; then
+              grep -q 'alive' /tmp/facilita-live.json
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs facilita-smoke
+          exit 1
+      - name: Remove contêiner de smoke test
+        if: always()
+        run: docker rm -f facilita-smoke || true
