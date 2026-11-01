@@ -32,6 +32,17 @@ before(async () => {
 after(() => server?.close());
 const post = (path, body, token) => fetch(url + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: JSON.stringify(body) });
 test('healthcheck', async () => assert.equal((await fetch(url + '/health')).status, 200));
+test('identificador de requisição em respostas bem-sucedidas e erros', async () => {
+  const good = await fetch(url + '/live');
+  const unauthorized = await fetch(url + '/servicos');
+  const missing = await fetch(url + '/rota-inexistente');
+  assert.equal(good.status, 200);
+  assert.equal(unauthorized.status, 401);
+  assert.equal(missing.status, 404);
+  const ids = [good, unauthorized, missing].map(response => response.headers.get('x-request-id'));
+  ids.forEach(id => assert.match(id, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i));
+  assert.equal(new Set(ids).size, 3);
+});
 test('serviços exigem autenticação', async () => assert.equal((await fetch(url + '/servicos')).status, 401));
 test('registro, login, criação de serviço', async () => {
   let r = await post('/auth/registro', { nome: 'João', email: 'joao@example.com', senha: 'senhaForte123' });
