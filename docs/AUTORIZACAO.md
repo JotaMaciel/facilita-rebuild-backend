@@ -40,3 +40,6 @@ A integração HTTP com MySQL verifica que um serviço `PENDENTE` não pode ser 
 Os testes também confirmam que o cliente não consegue concluir um serviço iniciado pelo prestador atribuído e que um serviço já concluído não pode ser cancelado. A conclusão tentada pelo cliente retorna `403` por falta de permissão, enquanto o cancelamento após conclusão retorna `409` por conflito de estado. O status e o `prestadorId` permanecem inalterados no MySQL.
 
 O teste de integração também confere a quantidade de notificações antes e depois de repetir a conclusão de um serviço. A repetição rejeitada com `409` não pode gerar novas notificações para o cliente, evitando efeitos colaterais duplicados.
+
+## Aceite concorrente
+O teste de integração cria dois prestadores distintos que tentam aceitar o mesmo serviço simultaneamente via `Promise.all`. O resultado esperado é um aceite HTTP 200 e um conflito HTTP 409. O MySQL deve persistir apenas um prestador atribuído e gerar somente uma notificação de aceite para o cliente. Ao final, o cenário de teste é restaurado para continuar o ciclo de atendimento.
