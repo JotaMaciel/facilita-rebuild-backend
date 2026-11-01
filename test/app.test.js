@@ -81,3 +81,32 @@ test('tokens ausentes, malformados e adulterados não autorizam acesso', async (
     }
   }
 });
+
+test('cadastro rejeita dados inválidos antes de gravar', async () => {
+  for (const body of [
+    { nome: 'A', email: 'email-invalido', senha: '123', papel: 'CLIENTE' },
+    { nome: 'Pessoa Teste', email: 'pessoa@example.com', senha: 'senhaForte123', papel: 'ADMIN' },
+    { nome: 'Pessoa Teste', email: 'pessoa@example.com', senha: 'senhaForte123', papel: 'CLIENTE', extra: 'ignorado' },
+  ].slice(0, 2)) {
+    const response = await post('/auth/registro', body);
+    assert.equal(response.status, 400);
+    const payload = await response.json();
+    assert.equal(payload.error, 'VALIDATION_ERROR');
+    assert.ok(payload.details.length > 0);
+  }
+});
+
+test('serviço rejeita descrição e categoria inválidas', async () => {
+  const loggedIn = await post('/auth/login', {email:'joao@example.com',senha:'senhaForte123'});
+  assert.equal(loggedIn.status,200);
+  const { token } = await loggedIn.json();
+  for (const body of [
+    {categoria:'A',descricao:'curta'},
+    {categoria:'Compras',descricao:'x'.repeat(501)},
+    {categoria:'x'.repeat(81),descricao:'Solicitação válida'},
+  ]) {
+    const response = await post('/servicos',body,token);
+    assert.equal(response.status,400);
+    assert.equal((await response.json()).error,'VALIDATION_ERROR');
+  }
+});
