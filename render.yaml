@@ -21,6 +21,6 @@ services:
       - key: FRONTEND_URL
         sync: false
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: DEV_PASSWORD_RESET_LOG
         value: "false"
