@@ -9,7 +9,7 @@
 ## Limitações
 - A renovação automática de sessão (refresh token) não está implementada.
 - O FrontEnd usa sessionStorage para guardar o token: revisar o risco de XSS e avaliar cookie HttpOnly no domínio de produção.
-- Ainda não há interface de recuperação de senha, envio de e-mail, lista de dispositivos ou fechamento de todas as sessões por comando próprio.
+- Há interface de recuperação, integração Resend e encerramento de todas as sessões. A lista mostra datas, sem identificação de dispositivo/localização.
 - O token JWT pode continuar válido criptograficamente após logout, mas não será autorizado pelo banco.
 - Não usar em produção antes de validação de migrações, segurança e limites de requisições.
 

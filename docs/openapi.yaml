@@ -126,11 +126,37 @@ paths:
           type: string
     get:
       summary: Histórico de mensagens de participantes
+      description: Últimas 100 mensagens em ordem cronológica; paginação para registros anteriores.
+      parameters:
+        - name: before
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: nextCursor da página anterior, pertencente à mesma conversa.
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Mensagens
+          description: Página de mensagens
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, hasMoreMessages, nextCursor]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                  hasMoreMessages:
+                    type: boolean
+                  nextCursor:
+                    type: string
+                    nullable: true
+        '400':
+          description: Cursor inválido ou de outra conversa
         '404':
           description: Não encontrado
     post:

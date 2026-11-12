@@ -1,4 +1,5 @@
 import express from 'express';
+import { parseTrustProxyHops } from './config.js';
 import { randomUUID } from 'node:crypto';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -21,11 +22,13 @@ const publicUser = ({ id, nome, email, papel }) => ({ id, nome, email, papel });
 function invalid(res, parsed) {
   return res.status(400).json({ error: 'VALIDATION_ERROR', details: parsed.error.issues.map(i => ({ field: i.path.join('.'), message: i.message })) });
 }
-export function createApp({ db, jwtSecret = process.env.JWT_SECRET, authRateLimit = 20 } = {}) {
+export function createApp({ db, jwtSecret = process.env.JWT_SECRET, authRateLimit = 20, trustProxyHops = parseTrustProxyHops() } = {}) {
   if (!db) throw new Error('Banco de dados obrigatório');
   if (!jwtSecret || jwtSecret.length < 32) throw new Error('JWT_SECRET deve ter ao menos 32 caracteres');
   const app = express();
   app.disable('x-powered-by');
+  if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0 || trustProxyHops > 5) throw new Error('trustProxyHops inválido');
+  app.set('trust proxy', trustProxyHops || false);
   app.use((req, res, next) => {
     req.requestId = randomUUID();
     res.setHeader('X-Request-ID', req.requestId);
@@ -103,11 +106,14 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET, authRateLimi
       if (!record || record.usado || record.expiraEm <= new Date()) return res.status(400).json({ error: 'INVALID_RESET_TOKEN' });
       const novaSenhaHash = await hashPassword(parsed.data.senha);
       const applied = await db.$transaction(async tx => {
+        // Serializa redefinições da mesma conta antes de verificar/consumir o token.
+        await tx.$queryRaw`SELECT id FROM usuarios WHERE id = ${record.usuarioId} FOR UPDATE`;
         const updated = await tx.recuperacaoSenha.updateMany({
           where: { id: record.id, usado: false, expiraEm: { gt: new Date() } },
           data: { usado: true },
         });
         if (!updated.count) return false;
+        await tx.recuperacaoSenha.updateMany({ where: { usuarioId: record.usuarioId, usado: false }, data: { usado: true } });
         await tx.usuario.update({ where: { id: record.usuarioId }, data: { senhaHash: novaSenhaHash } });
         await tx.sessao.updateMany({ where: { usuarioId: record.usuarioId, revogada: false }, data: { revogada: true } });
         return true;
@@ -162,7 +168,7 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET, authRateLimi
     const page = z.coerce.number().int().min(1).max(10000).safeParse(req.query.page || 1);
     if (!page.success) return res.status(400).json({ error: 'INVALID_PAGE' });
     try {
-      const rows = await db.servico.findMany({ where: { usuarioId: req.auth.sub }, orderBy: { criadoEm: 'desc' }, skip: (page.data - 1) * 20, take: 21 });
+      const rows = await db.servico.findMany({ where: { usuarioId: req.auth.sub }, include: { avaliacao: true }, orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], skip: (page.data - 1) * 20, take: 21 });
       res.json({ data: rows.slice(0, 20), page: page.data, pageSize: 20, hasNextPage: rows.length > 20 });
     }
     catch (e) { next(e); }
@@ -219,7 +225,7 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET, authRateLimi
       try {
         await db.notificacao.create({ data: { usuarioId: service.usuarioId, titulo: 'Serviço aceito', texto: 'Um prestador aceitou sua solicitação.' } });
       } catch (notifyError) {
-        console.error('Falha ao gerar notificação de aceite:', notifyError);
+        console.error('Falha ao gerar notificação de aceite', { requestId: req.requestId, error: 'NOTIFICATION_FAILED' });
       }
       res.json({ data: service });
     } catch (e) { next(e); }
@@ -272,8 +278,23 @@ export function createApp({ db, jwtSecret = process.env.JWT_SECRET, authRateLimi
     try {
       const service = await participant(db, req.params.id, req.auth.sub);
       if (!service || !service.prestadorId || ['PENDENTE', 'CANCELADO'].includes(service.status)) return res.status(404).json({ error: 'NOT_FOUND' });
-      const data = await db.mensagem.findMany({ where: { servicoId: service.id }, orderBy: { criadoEm: 'asc' }, take: 100 });
-      res.json({ data });
+      const before = req.query.before;
+      if (before !== undefined && !z.uuid().safeParse(before).success) return res.status(400).json({ error: 'INVALID_CURSOR' });
+      let boundary;
+      if (before) {
+        boundary = await db.mensagem.findFirst({ where: { id: before, servicoId: service.id } });
+        if (!boundary) return res.status(400).json({ error: 'INVALID_CURSOR' });
+      }
+      const rows = await db.mensagem.findMany({
+        where: { servicoId: service.id, ...(boundary ? { OR: [
+          { criadoEm: { lt: boundary.criadoEm } },
+          { criadoEm: boundary.criadoEm, id: { lt: boundary.id } },
+        ] } : {}) },
+        orderBy: [{ criadoEm: 'desc' }, { id: 'desc' }], take: 101,
+      });
+      const page = rows.slice(0, 100);
+      const hasMoreMessages = rows.length > 100;
+      res.json({ data: page.reverse(), hasMoreMessages, nextCursor: hasMoreMessages ? page[0].id : null });
     } catch (error) { next(error); }
   });
   const messageLimiter = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false });

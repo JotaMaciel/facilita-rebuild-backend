@@ -9,11 +9,11 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "node --test test/app.test.js test/security.test.js test/tokens.test.js test/email.test.js test/config.test.js",
+    "test": "node --test test/app.test.js test/security.test.js test/tokens.test.js test/email.test.js test/config.test.js test/errors.test.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "test:integration": "node --test test/mysql.integration.test.js",
+    "test:integration": "node --test test/mysql.integration.test.js test/stabilization.integration.test.js",
     "db:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status"
   },
@@ -29,5 +29,10 @@
   },
   "devDependencies": {
     "prisma": "^6.16.2"
+  },
+  "overrides": {
+    "@prisma/config": {
+      "deepmerge-ts": "8.0.0"
+    }
   }
 }

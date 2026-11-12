@@ -1,7 +1,7 @@
 FROM node:22-alpine AS dependencies
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 
 FROM node:22-alpine
 ENV NODE_ENV=production

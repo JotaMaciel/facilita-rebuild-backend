@@ -1,4 +1,11 @@
+// Zero mantém o comportamento seguro para acesso direto. Configure apenas atrás de proxy conhecido.
+export function parseTrustProxyHops(value = process.env.TRUST_PROXY_HOPS ?? '0') {
+  if (!/^[0-5]$/.test(value)) throw new Error('TRUST_PROXY_HOPS deve ser um inteiro entre 0 e 5');
+  return Number(value);
+}
+
 export function validateProductionConfig(env = process.env) {
+  parseTrustProxyHops(env.TRUST_PROXY_HOPS ?? '0');
   if (env.NODE_ENV !== 'production') return true;
   const errors = [];
   if (!env.JWT_SECRET || env.JWT_SECRET.length < 48 || /SUBSTITUA|CHANGE_ME|test|local/i.test(env.JWT_SECRET)) errors.push('JWT_SECRET deve ser uma chave forte de produção');

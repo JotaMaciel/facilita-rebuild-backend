@@ -1,3 +1,5 @@
+> Documento histórico. Para o estado atual, consulte `EXECUCAO_LOCAL.md`, `ESTABILIZACAO.md` e `DEPLOY_HOMOLOGACAO.md`.
+
 # Primeira entrega executável
 
 API mínima independente construída na versão Rebuild, sem copiar controllers ou segredos do repositório original.

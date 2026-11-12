@@ -16,3 +16,10 @@ test('produção rejeita chave fraca e URL insegura', () => {
 test('produção rejeita logs de tokens e origens com caminho', () => {
   assert.throws(()=>validateProductionConfig({...valid,DEV_PASSWORD_RESET_LOG:'true',FRONTEND_URL:'https://app.example.test/path'}),/FRONTEND_URL.*DEV_PASSWORD_RESET_LOG/);
 });
+
+test('proxy aceita somente quantidade explícita e limitada de saltos', () => {
+  for (const value of ['true', '*', '-1', '6', '1.5', '']) {
+    assert.throws(() => validateProductionConfig({ NODE_ENV: 'development', TRUST_PROXY_HOPS: value }), /TRUST_PROXY_HOPS/);
+  }
+  for (const value of ['0', '1', '2']) assert.equal(validateProductionConfig({ NODE_ENV: 'development', TRUST_PROXY_HOPS: value }), true);
+});

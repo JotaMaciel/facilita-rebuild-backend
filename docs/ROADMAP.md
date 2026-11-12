@@ -1,3 +1,5 @@
+> Documento histórico. Para o estado atual, consulte `EXECUCAO_LOCAL.md`, `ESTABILIZACAO.md` e `DEPLOY_HOMOLOGACAO.md`.
+
 # Roadmap BackEnd — Facilita Rebuild
 
 ## Fase 1 — Reprodução

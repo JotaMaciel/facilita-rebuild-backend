@@ -50,3 +50,6 @@ Requisitos para validar: Node.js >=22, npm e Docker Compose. Testes unitários e
 
 ### Paginação de serviços
 `GET /v1/facilita/servicos?page=1` retorna os serviços do usuário autenticado, com até 20 itens por página e os campos `data`, `page`, `pageSize` (20) e `hasNextPage` (booleano). O campo `hasNextPage` é calculado consultando um item adicional, sem exigir contagem total. O FrontEnd pode apresentar **Carregar mais** enquanto `hasNextPage` for `true`.
+
+## Estabilização para homologação
+Consulte [as correções e verificações de estabilização](docs/ESTABILIZACAO.md). Instale as versões fixadas com `npm ci`. Alterações locais ainda precisam passar no CI dos commits publicados e na homologação HTTPS real.

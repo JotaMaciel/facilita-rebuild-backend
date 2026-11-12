@@ -2,7 +2,7 @@
 
 Cada requisição recebe um UUID gerado pelo servidor. A resposta expõe o cabeçalho `X-Request-ID`, incluindo respostas de erro (401 e 404).
 
-Em exceções internas, o log inclui `requestId`, método HTTP, caminho e mensagem de erro. Isso permite relacionar o erro reportado pelo cliente com a requisição do servidor. O identificador é sempre gerado pelo servidor e não é aceito de um cabeçalho fornecido pelo cliente.
+Em exceções internas, o log inclui `requestId`, método HTTP, padrão da rota e código genérico de erro. Isso permite relacionar o erro reportado pelo cliente com a requisição do servidor. O identificador é sempre gerado pelo servidor e não é aceito de um cabeçalho fornecido pelo cliente.
 
 Exemplo de diagnóstico:
 
@@ -15,7 +15,7 @@ Procure o cabeçalho `X-Request-ID` na resposta. Em atendimento, encaminhe esse 
 Os testes automatizados verificam o formato UUID v4, a unicidade por requisição e a presença em respostas de sucesso, autenticação negada e rota inexistente.
 
 ## Erros internos
-Respostas HTTP 500 usam o formato `{ "error": "INTERNAL_ERROR", "requestId": "<uuid>" }`. O `requestId` corresponde ao cabeçalho `X-Request-ID`. Detalhes de exceções e mensagens do banco permanecem apenas nos logs do servidor e não são incluídos na resposta pública. O tratamento respeita respostas que já tenham enviado cabeçalhos.
+Respostas HTTP 500 usam o formato `{ "error": "INTERNAL_ERROR", "requestId": "<uuid>" }`. O `requestId` corresponde ao cabeçalho `X-Request-ID`. Detalhes de exceções e mensagens do banco não são incluídos na resposta pública nem no log centralizado. O tratamento respeita respostas que já tenham enviado cabeçalhos.
 
 ## Erros de entrada
 Corpos JSON inválidos retornam HTTP `400` com `error: INVALID_JSON`, e corpos maiores que o limite configurado de 100 KB retornam HTTP `413` com `error: PAYLOAD_TOO_LARGE`. Ambas as respostas incluem `requestId`, correspondente ao cabeçalho `X-Request-ID`, sem reproduzir os dados recebidos. Erros inesperados continuam sendo retornados como HTTP `500` e `INTERNAL_ERROR`.

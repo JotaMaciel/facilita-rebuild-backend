@@ -33,3 +33,6 @@ Esta configuração usa **Aiven MySQL Free**, **Render Web Service Free** e **Ve
 | Vercel | `VITE_API_BASE_URL` | `https://...onrender.com/v1/facilita` |
 
 Após validar o MVP, atualize o processo de migration para execução separada e prepare um plano de produção com backups testados, monitoramento e domínio estável.
+
+## Proxy e instalação reproduzível
+O Blueprint usa `npm ci --include=dev` e `TRUST_PROXY_HOPS=1` para um proxy de entrada do Render. O padrão local é `0`; são aceitos inteiros de 0 a 5. Revalide a cadeia ao adicionar CDN/proxy. Não permita caminhos mais curtos até a aplicação que aceitem `X-Forwarded-For` arbitrário. Confirme limites independentes para clientes distintos na homologação. Não use confiança irrestrita em proxy.

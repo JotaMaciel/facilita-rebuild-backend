@@ -26,3 +26,10 @@ A persistência das mensagens usa HTTP, **não WebSocket em tempo real**. O Fron
 
 ## Limitações
 Protótipo sujeito a validação de segurança e autorização ampliada; sem integração com pagamentos reais, implantação pública ou paridade total com o Facilita original. Não publicar antes de concluir análise de segurança, migrações versionadas, observabilidade e testes.
+
+## Contratos de estabilização
+`GET /servicos` inclui `avaliacao` (objeto persistido ou null) em cada serviço.
+
+`GET /servicos/:id/mensagens` retorna `{ data, hasMoreMessages, nextCursor }`. Abre nas últimas 100 mensagens em ordem cronológica. Use `?before=<nextCursor>` para buscar anteriores; não envie `before` quando o cursor for null. Cursor inválido ou de outra conversa retorna `400 INVALID_CURSOR`. A autorização dos participantes continua obrigatória.
+
+Na redefinição bem-sucedida, todos os demais links de recuperação e as sessões da conta são invalidados atomicamente.

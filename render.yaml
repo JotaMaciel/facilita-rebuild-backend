@@ -6,7 +6,7 @@ services:
     runtime: node
     plan: free
     branch: feat/persistencia-autenticacao
-    buildCommand: npm install --include=dev --no-audit --no-fund && npm run db:generate
+    buildCommand: npm ci --include=dev --no-audit --no-fund && npm run db:generate
     # Somente para a base VAZIA e isolada de homologacao.
     # migrate deploy e idempotente, mas exige permissao DDL no banco.
     startCommand: npm run db:deploy && npm start
@@ -14,6 +14,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Um proxy de entrada do Render. Revalidar se adicionar CDN/proxy intermediário.
+      - key: TRUST_PROXY_HOPS
+        value: "1"
       - key: NODE_VERSION
         value: "22"
       - key: DATABASE_URL

@@ -173,3 +173,19 @@ test('listagem de serviços informa corretamente próxima página', async () => 
     data.splice(0,data.length,...originals);
   }
 });
+
+test('proxy confiável separa clientes e ignora IP falso anterior ao salto configurado', async () => {
+  const app = createApp({ db, jwtSecret: secret, authRateLimit: 2, trustProxyHops: 1 });
+  const proxyServer = app.listen(0, '127.0.0.1');
+  try {
+    await new Promise(resolve => proxyServer.once('listening', resolve));
+    const send = forwarded => fetch(`http://127.0.0.1:${proxyServer.address().port}/v1/facilita/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': forwarded },
+      body: JSON.stringify({ email: 'missing@example.test', senha: 'SenhaInvalida123!' }),
+    });
+    assert.equal((await send('192.0.2.1')).status, 401);
+    assert.equal((await send('192.0.2.1')).status, 401);
+    assert.equal((await send('192.0.2.99, 192.0.2.1')).status, 429, 'IP falso à esquerda não deve contornar limite');
+    assert.equal((await send('192.0.2.2')).status, 401, 'outro cliente não deve compartilhar limite');
+  } finally { await new Promise(resolve => proxyServer.close(resolve)); }
+});
