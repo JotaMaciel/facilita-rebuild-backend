@@ -1,0 +1,26 @@
+# Homologacao do Facilita Rebuild (Render Free + Aiven MySQL)
+# Selecione a branch feat/persistencia-autenticacao ao criar o Blueprint.
+services:
+  - type: web
+    name: facilita-rebuild-api
+    runtime: node
+    plan: free
+    branch: feat/persistencia-autenticacao
+    buildCommand: npm install --include=dev --no-audit --no-fund && npm run db:generate
+    # Somente para a base VAZIA e isolada de homologacao.
+    # migrate deploy e idempotente, mas exige permissao DDL no banco.
+    startCommand: npm run db:deploy && npm start
+    healthCheckPath: /v1/facilita/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22
+      - key: DATABASE_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEV_PASSWORD_RESET_LOG
+        value: "false"
