@@ -1,0 +1,19 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: facilita
+      MYSQL_USER: facilita
+      MYSQL_PASSWORD: facilita_local
+      MYSQL_ROOT_PASSWORD: root_local_apenas_dev
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+volumes:
+  mysql_data:
