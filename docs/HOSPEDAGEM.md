@@ -24,7 +24,7 @@ O arquivo `.env.example` é somente um modelo de desenvolvimento. Configure dom�
 Build: `npm install && npm run db:generate`.
 Início: `npm start`.
 
-**Atenção ao banco de produção:** o projeto ainda depende de `prisma db push` para configuração local e **não possui um histórico de migrações versionadas pronto para implantação**. Não rode `db:push` diretamente no banco produtivo. Antes de hospedar, gere e revise migrações Prisma, configure backups e um processo controlado de atualização do esquema.
+**Atenção ao banco:** a migração inicial versionada está em `prisma/migrations/20261031_initial_baseline/`. Ela é adequada a um **banco MySQL vazio de homologação**, e o CI valida `npm run db:deploy`. Não aplique a baseline sobre um banco existente sem inspeção, backup e processo de baselining. Leia `docs/MIGRACOES.md` e `docs/DEPLOY_HOMOLOGACAO.md`. Não rode `prisma db push` no banco hospedado.
 
 ## Healthcheck
 `GET /v1/facilita/health` verifica também a conexão com o MySQL. Em indisponibilidade do banco, responde erro de servidor. Configure o probe HTTP do provedor com essa rota após validar o comportamento em homologação.
