@@ -5,7 +5,7 @@ Esta configuração usa **Aiven MySQL Free**, **Render Web Service Free** e **Ve
 ## Ordem obrigatória
 
 1. Aiven: crie um serviço **MySQL Free**, na região disponível mais próxima. Aguarde o serviço ficar ativo. Copie host, porta, usuário, senha, nome do banco e CA/certificado conforme o painel, sem publicar credenciais no GitHub. Monte uma URL `mysql://` adequada ao Prisma 6, com TLS e verificação de certificado; teste a conexão antes de publicar. Não cole senhas em mensagens de chat.
-2. Render: conecte o repositório `JotaMaciel/facilita-rebuild-backend` e a branch `feat/persistencia-autenticacao`. Use **Blueprint** do `render.yaml`, confirme **Free** e não aceite upgrades pagos. Preencha `DATABASE_URL` (secreta) e `FRONTEND_URL` com a origem HTTPS da Vercel. `JWT_SECRET` é gerada automaticamente pelo Blueprint. Caso ainda não exista URL da Vercel, crie o projeto Vercel primeiro para obtê-la, sem precisar publicar um FrontEnd funcional.
+2. Render: conecte o repositório `JotaMaciel/facilita-rebuild-backend` e a branch `feat/persistencia-autenticacao`. Use **Blueprint** do `render.yaml`, confirme **Free** e não aceite upgrades pagos. Preencha `DATABASE_URL` (secreta) e `FRONTEND_URL` com a origem HTTPS da Vercel. Preencha `JWT_SECRET` com uma chave aleatória forte de **pelo menos 48 caracteres**, gerada localmente em um gerenciador de segredos. Não use o gerador padrão do Blueprint sem verificar seu comprimento. Caso ainda não exista URL da Vercel, crie o projeto Vercel primeiro para obtê-la, sem precisar publicar um FrontEnd funcional.
 3. Vercel: importe `JotaMaciel/facilita-rebuild-frontend`, branch `feat/interface-integrada-api`, framework **Vite**, comando `npm run build`, saída `dist`; defina `VITE_API_BASE_URL=https://<nome-real-da-api>.onrender.com/v1/facilita` **antes do build** e faça redeploy ao alterar essa variável.
 4. Render: confira `FRONTEND_URL=https://<dominio-real>.vercel.app`, sem barra final nem caminho, e publique novamente a API se necessário. O código impede iniciar em `NODE_ENV=production` sem `DATABASE_URL`, `FRONTEND_URL` HTTPS e `JWT_SECRET` forte.
 5. Teste `GET /v1/facilita/live` e `GET /v1/facilita/health` (este segundo precisa retornar `database: connected`). Então teste cadastro de CLIENTE e PRESTADOR, login, criação e aceitação de serviços, mensagens, conclusão, avaliação, notificações, logout e bloqueio de acesso de terceiros.
@@ -27,7 +27,7 @@ Esta configuração usa **Aiven MySQL Free**, **Render Web Service Free** e **Ve
 | Aiven | — | Serviço MySQL Free vazio, com TLS |
 | Render | `NODE_ENV` | `production` |
 | Render | `DATABASE_URL` | String MySQL **secreta** com TLS |
-| Render | `JWT_SECRET` | Gerada no Render pelo Blueprint |
+| Render | `JWT_SECRET` | Segredo aleatório com pelo menos 48 caracteres, informado apenas no Render |
 | Render | `FRONTEND_URL` | Origem exata `https://...vercel.app` |
 | Render | `DEV_PASSWORD_RESET_LOG` | `false` |
 | Vercel | `VITE_API_BASE_URL` | `https://...onrender.com/v1/facilita` |
